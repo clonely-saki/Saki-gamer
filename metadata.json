@@ -1,0 +1,7 @@
+{
+  "name": "JP Gamer Vocab",
+  "description": "A Japanese vocabulary learning app specifically designed for gamers, featuring terms from Life, Valorant, Apex, and Overwatch.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
