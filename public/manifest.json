@@ -2,12 +2,12 @@
   "name": "JP Gamer Vocab",
   "short_name": "JP Gamer",
   "description": "专为玩家设计的日语词汇学习App。收录瓦罗兰特、Apex、守望先锋等游戏术语及生活常用语。",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0a0c",
   "theme_color": "#0a0a0c",
   "orientation": "portrait",
-  "categories": ["education", "games", "entertainment"],
   "icons": [
     {
       "src": "https://placehold.co/192x192/0f1923/ffffff/png?text=JP",

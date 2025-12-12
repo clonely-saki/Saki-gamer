@@ -1,16 +1,20 @@
-const CACHE_NAME = 'jp-gamer-v1';
+const CACHE_NAME = 'jp-gamer-v2';
 const urlsToCache = [
   '/',
   '/index.html',
+  '/manifest.json?v=2'
 ];
 
 self.addEventListener('install', (event) => {
+  // Perform install steps
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
+        console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
   );
+  self.skipWaiting(); // Force activation
 });
 
 self.addEventListener('fetch', (event) => {
@@ -39,4 +43,5 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  return self.clients.claim(); // Take control immediately
 });

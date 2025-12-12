@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>JP Gamer Vocab</title>
     
-    <!-- PWA Setup -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- PWA Setup: Added ?v=2 to force PWABuilder to see the new file -->
+    <link rel="manifest" href="/manifest.json?v=2" />
     <meta name="theme-color" content="#0a0a0c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -33,12 +33,12 @@
   <script type="importmap">
 {
   "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
     "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
     "vite": "https://esm.sh/vite@^7.2.7",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3"
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
 }
 </script>
@@ -47,15 +47,17 @@
     <div id="root"></div>
     <!-- Entry point for Vite -->
     <script type="module" src="/index.tsx"></script>
+    
+    <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
             .then((registration) => {
-              console.log('ServiceWorker registration successful');
+              console.log('SW registered: ', registration.scope);
             })
             .catch((err) => {
-              console.log('ServiceWorker registration failed: ', err);
+              console.log('SW registration failed: ', err);
             });
         });
       }
