@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Play, Mic, Search, X, Volume2, 
-  StopCircle, ChevronLeft, MessageCircle, MoreHorizontal, Sparkles,
+  StopCircle, ChevronLeft, MessageCircle, MoreHorizontal,
   Sword, Shield, Crosshair, Zap, Target, User, Bot, AlertCircle, Gamepad2, Download, Share,
   Trophy
 } from 'lucide-react';
@@ -148,21 +148,20 @@ const THEME_STYLES: Record<string, {
     bgClass: "bg-[#0a0a0c]", // Dark midnight base
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Soft atmospheric gradient top */}
-        <div className="absolute top-0 left-0 w-full h-[400px] bg-[radial-gradient(circle_at_50%_-20%,rgba(192,38,211,0.15),transparent_70%)]"></div>
+        {/* Soft atmospheric gradient top - PURE COLOR TRANSITION */}
+        <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-fuchsia-900/40 via-[#1a1025] to-[#0a0a0c]"></div>
+        
         {/* Subtle bottom glow */}
         <div className="absolute bottom-0 right-0 w-[80%] h-[300px] bg-[radial-gradient(ellipse_at_bottom_right,rgba(79,70,229,0.1),transparent_70%)]"></div>
-        {/* Very subtle grid for unity with gaming themes */}
+        {/* Very subtle grid for unity */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
       </div>
     ),
-    // Cards: Rounded, frosted glass, with a distinct left border to match the app's design language
     cardClass: "rounded-xl border-l-4 border-l-fuchsia-500 border-y border-r border-white/10 bg-[#18181b]/80 hover:bg-[#27272a] hover:border-l-fuchsia-400 transition-all shadow-sm relative overflow-hidden backdrop-blur-md",
     cardBgContent: (
       <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
     ),
     accentColorClass: "text-fuchsia-400 font-bold",
-    // Button: Gradient, rounded-xl to match cards, subtle shadow
     buttonClass: "bg-gradient-to-r from-fuchsia-600 to-indigo-600 rounded-xl font-bold shadow-[0_4px_20px_-5px_rgba(192,38,211,0.4)] hover:shadow-[0_4px_25px_-5px_rgba(192,38,211,0.6)] transition-all transform hover:-translate-y-0.5",
     detailBgClass: "bg-[#0a0a0c]"
   },
@@ -170,13 +169,14 @@ const THEME_STYLES: Record<string, {
     bgClass: "bg-[#0f1923]",
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* WALLPAPER LAYER: Reverted to pure abstract/solid style - NO PHOTO PATTERN */}
+        <div className="absolute inset-0 bg-[#0f1923]"></div>
+        {/* Red Accent Graphic */}
+        <div className="absolute top-0 right-0 w-[40%] h-full bg-[#ff4655]/10 skew-x-[-20deg] transform origin-bottom"></div>
+        <div className="absolute top-0 right-[20%] w-[5%] h-full bg-[#ff4655]/5 skew-x-[-20deg]"></div>
+        
         {/* Tactical Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
-        {/* Red Zone */}
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#ff4655]/10 to-transparent skew-x-[-10deg]"></div>
-        {/* Tech Lines */}
-        <div className="absolute bottom-10 left-0 w-full h-[1px] bg-white/5"></div>
-        <div className="absolute top-20 right-20 w-20 h-20 border border-white/5 rounded-full"></div>
       </div>
     ),
     cardClass: "rounded-none border-l-4 border-l-[#ff4655] border-y border-r border-white/10 bg-[#ece8e1]/5 hover:bg-[#ece8e1]/10 transition-all relative overflow-hidden",
@@ -193,11 +193,15 @@ const THEME_STYLES: Record<string, {
     bgClass: "bg-[#1a0b0b]",
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* WALLPAPER LAYER: Canyon/Dusty Red Industrial */}
+        <div className="absolute top-0 left-0 w-full h-[450px] bg-[url('https://images.unsplash.com/photo-1533236897111-3e94666b2752?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
+        
+        {/* Gradient Fade */}
+        <div className="absolute top-0 left-0 w-full h-[451px] bg-gradient-to-b from-[#da292a]/10 via-[#1a0b0b]/80 to-[#1a0b0b]"></div>
+
         {/* Dusty Atmosphere */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#a33838_0%,transparent_70%)] opacity-20"></div>
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-        {/* Ring Flare */}
-        <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] bg-orange-600/30 rounded-full blur-3xl"></div>
         {/* Tech Overlay */}
         <div className="absolute top-0 right-0 w-[200px] h-full border-l border-red-500/10 skew-x-[-15deg]"></div>
       </div>
@@ -211,17 +215,20 @@ const THEME_STYLES: Record<string, {
     detailBgClass: "bg-[#1a0b0b]"
   },
   OW: {
-    bgClass: "bg-[#131519]", // Neutral dark metallic grey, matching the logo background
+    bgClass: "bg-[#131519]", // Neutral dark metallic grey
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* WALLPAPER LAYER: Futuristic White/Orange/Silver Tech */}
+        <div className="absolute top-0 left-0 w-full h-[450px] bg-[url('https://images.unsplash.com/photo-1505424297051-c3ad50b71303?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-30 mix-blend-overlay"></div>
+        
+        {/* Gradient Fade */}
+        <div className="absolute top-0 left-0 w-full h-[451px] bg-gradient-to-b from-[#f99e1a]/10 via-[#131519]/80 to-[#131519]"></div>
+
         {/* Top Glow simulating the logo ring light (Silver/Orange halo) */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[600px] h-[350px] bg-[radial-gradient(ellipse_at_top,rgba(249,158,26,0.25)_0%,transparent_70%)] blur-[70px]"></div>
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[600px] h-[350px] bg-[radial-gradient(ellipse_at_top,rgba(249,158,26,0.15)_0%,transparent_70%)] blur-[70px]"></div>
         
         {/* Tech pattern overlay - subtle dotted grid */}
         <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(circle_at_center,white_1.5px,transparent_1.5px)] bg-[size:30px_30px]"></div>
-        
-        {/* Stronger vignette for depth */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,#0b0c10_100%)] opacity-80"></div>
       </div>
     ),
     // Cards: Flat, metallic dark grey with silver accents, sharp corners (rounded-sm)
@@ -266,9 +273,21 @@ export default function App() {
   const currentTheme = THEME_STYLES[activeTab] || THEME_STYLES['LIFE'];
 
   useEffect(() => {
+    // Optimization for China/Offline: 
+    // Prioritize 'localService' voices which are built-in and offline capable.
+    // This avoids hitting Google servers if a network voice is default.
     const loadVoices = () => {
-        const available = window.speechSynthesis.getVoices().filter(v => v.lang.includes('ja'));
-        setVoices(available);
+        const all = window.speechSynthesis.getVoices();
+        // Filter for Japanese
+        const ja = all.filter(v => v.lang.includes('ja'));
+        
+        // Sort: Local service first (true comes before false in this sort)
+        ja.sort((a, b) => {
+             if (a.localService === b.localService) return 0;
+             return a.localService ? -1 : 1;
+        });
+
+        setVoices(ja);
     };
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -291,7 +310,7 @@ export default function App() {
         // Delay slighty to not annoy user immediately
         setTimeout(() => setIsIOS(true), 2000);
     }
-
+    
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
@@ -324,9 +343,9 @@ export default function App() {
         setFeedback(`完美！"${transcript}"`);
     } else {
         if (finalScore >= 80) {
-            setFeedback(`很好！听到："${transcript}"`);
+            setFeedback(`很好！聽到："${transcript}"`);
         } else if (finalScore >= 50) {
-            setFeedback(`接近了... 听到："${transcript}"`);
+            setFeedback(`接近了... 聽到："${transcript}"`);
         } else {
             setFeedback(`没对上。听到："${transcript}"`);
         }
@@ -404,6 +423,8 @@ export default function App() {
   };
 
   const handlePlay = (text: string, id: string) => {
+    // Uses window.speechSynthesis (Phone Built-in Service)
+    // Works offline if language pack is installed on device
     setPlayingId(id);
     const rawLines = text.split('\n');
     const cleanLines = rawLines.map(line => {
@@ -421,15 +442,28 @@ export default function App() {
         const line = cleanLines[index];
         const u = new SpeechSynthesisUtterance(line.content);
         u.lang = 'ja-JP';
-        if (voices.length >= 2) {
-            u.voice = line.isB ? voices[1] : voices[0];
-        } else {
-            u.pitch = line.isB ? 0.8 : 1.1; 
+        
+        // Voice selection logic prioritized local voices in useEffect
+        if (voices.length > 0) {
+            if (voices.length >= 2) {
+                 u.voice = line.isB ? voices[1] : voices[0];
+            } else {
+                 u.voice = voices[0];
+            }
         }
+        
+        if (voices.length < 2) {
+             u.pitch = line.isB ? 0.8 : 1.1; 
+        }
+
         u.rate = 0.9; 
         u.onend = () => {
             index++;
             playNext();
+        };
+        u.onerror = (e) => {
+            console.error("TTS Error:", e);
+            setPlayingId(null);
         };
         window.speechSynthesis.speak(u);
     };
@@ -536,9 +570,28 @@ export default function App() {
           {currentTheme.bgOverlay}
       </div>
 
-      {/* Header */}
-      <div className={`backdrop-blur-xl border-b border-white/5 sticky top-0 z-30 transition-colors duration-300 ${activeTab === 'APEX' ? 'bg-[#1a0b0b]/90' : activeTab === 'VALORANT' ? 'bg-[#0f1923]/95' : activeTab === 'OW' ? 'bg-[#131519]/95' : 'bg-[#0a0a0c]/80'}`}>
-        <div className="max-w-md mx-auto px-4 py-3 space-y-4">
+      {/* NEW HEADER with 4-Split Slanted Background */}
+      <div className="sticky top-0 z-30 border-b border-white/10 bg-[#0a0a0c] overflow-hidden shadow-2xl">
+        
+        {/* Slanted 4-Part Wallpaper Background Container */}
+        <div className="absolute inset-0 flex transform -skew-x-12 scale-125 -ml-8 pointer-events-none opacity-90 select-none">
+            {/* 1. Life: Purple Gradient */}
+            <div className="flex-1 bg-gradient-to-br from-fuchsia-900 via-purple-900 to-indigo-950 border-r border-white/5"></div>
+            
+            {/* 2. Valorant: Red/Rose Gradient */}
+            <div className="flex-1 bg-gradient-to-br from-[#ff4655] to-[#bd3944] border-r border-white/10 relative"></div>
+
+            {/* 3. Apex: Deep Red/Blood Gradient */}
+            <div className="flex-1 bg-gradient-to-br from-[#8e0e0e] to-[#5e1c1c] border-r border-white/10 relative"></div>
+
+            {/* 4. Overwatch: Orange Gradient */}
+            <div className="flex-1 bg-gradient-to-br from-[#f99e1a] to-[#b36b0e] relative"></div>
+        </div>
+
+        {/* Global Dark Overlay for Text Readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0a0a0c]/90 pointer-events-none backdrop-blur-[2px]"></div>
+
+        <div className="relative z-10 max-w-md mx-auto px-4 py-3 space-y-4">
           <div className="flex items-center justify-between">
              <div className="flex items-center gap-3">
                 <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-fuchsia-600 rounded-lg shadow-lg shadow-fuchsia-500/20">
@@ -548,15 +601,17 @@ export default function App() {
                   JP Gamer
                 </h1>
              </div>
-             {deferredPrompt && (
-                <button 
-                  onClick={handleInstallClick}
-                  className="flex items-center gap-2 bg-white text-black px-3 py-1.5 rounded-full text-xs font-bold hover:bg-neutral-200 transition-colors animate-pulse"
-                >
-                  <Download className="w-3 h-3" />
-                  安装应用
-                </button>
-             )}
+             <div className="flex items-center gap-2">
+                 {deferredPrompt && (
+                    <button 
+                      onClick={handleInstallClick}
+                      className="flex items-center gap-2 bg-white text-black px-3 py-1.5 rounded-full text-xs font-bold hover:bg-neutral-200 transition-colors animate-pulse"
+                    >
+                      <Download className="w-3 h-3" />
+                      安装
+                    </button>
+                 )}
+             </div>
           </div>
           
           <div className="relative group">
@@ -579,22 +634,26 @@ export default function App() {
           </div>
         </div>
         
-        {/* Category Tabs */}
-        <div className="max-w-md mx-auto px-4 pb-0 overflow-x-auto no-scrollbar flex gap-4 mt-2 mb-2">
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveTab(cat.id)}
-              className={`flex-shrink-0 pb-2 border-b-2 transition-all duration-300 flex items-center gap-2 ${
-                activeTab === cat.id 
-                  ? `${cat.color.split(' ')[0]} font-bold border-current scale-105`
-                  : 'border-transparent text-neutral-500 font-medium hover:text-neutral-300'
-              }`}
-            >
-              {activeTab === cat.id && cat.icon}
-              <span className={`text-sm tracking-wide ${cat.id === 'VALORANT' ? 'uppercase' : ''} ${cat.id === 'OW' ? 'italic' : ''}`}>{cat.name}</span>
-            </button>
-          ))}
+        {/* Category Tabs - Average Spacing via Grid */}
+        <div className="relative z-10 max-w-md mx-auto px-2 pb-0 mt-2 mb-2">
+          <div className="grid grid-cols-4 gap-2 w-full">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveTab(cat.id)}
+                className={`pb-2 border-b-2 transition-all duration-300 flex flex-col items-center justify-center gap-1 ${
+                  activeTab === cat.id 
+                    ? `${cat.color.split(' ')[0]} font-bold border-current scale-105`
+                    : 'border-transparent text-neutral-400 font-medium hover:text-white'
+                }`}
+              >
+                {activeTab === cat.id && <div className="mb-0.5">{cat.icon}</div>}
+                <span className={`text-[10px] leading-tight text-center truncate w-full ${cat.id === 'VALORANT' ? 'uppercase' : ''} ${cat.id === 'OW' ? 'italic' : ''}`}>
+                  {cat.id === 'LIFE' ? '生活' : cat.name}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -630,6 +689,8 @@ export default function App() {
         </div>
       </main>
       
+      {/* ... (Rest of the component: Detail View, iOS Prompt, Styles) ... */}
+
       {/* ================= Detail View (Constrained to App Width) ================= */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex justify-center pointer-events-none">
