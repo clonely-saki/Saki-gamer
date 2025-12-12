@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jp-gamer-offline-v4';
+const CACHE_NAME = 'jpgamer-offline-v5';
 
 // Only cache the shell files during install.
 // The app's JS/CSS chunks (hashed by Vite) will be cached dynamically upon first fetch.

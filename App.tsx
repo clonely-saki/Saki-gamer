@@ -403,7 +403,37 @@ export default function App() {
     setRecording(false);
   };
 
+  // Perform the visual logic for closing (without History API manipulation)
+  const handleVisualClose = useCallback(() => {
+    stopRecording();
+    window.speechSynthesis.cancel();
+    setIsDetailClosing(true);
+    setTimeout(() => {
+        setSelectedItem(null);
+        setIsDetailClosing(false);
+    }, 300);
+  }, [selectedItem, recording]);
+
+  // Handle Browser Back / Swipe Back events
+  useEffect(() => {
+    const onPopState = (event: PopStateEvent) => {
+        // If an item is selected, closing it is the expected "Back" behavior.
+        // We perform the visual closing sequence without calling history.back() again.
+        if (selectedItem) {
+            handleVisualClose();
+        }
+    };
+    
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [selectedItem, handleVisualClose]);
+
   const openDetail = (item: VocabItem) => {
+    // Push a new entry to history stack. 
+    // This ensures that when user swipes back, they return to the previous state (list view)
+    // instead of exiting the app.
+    window.history.pushState({ itemId: item.id }, "", "");
+
     setSelectedItem(item);
     setScore(null);
     setFeedback("");
@@ -413,13 +443,9 @@ export default function App() {
   };
 
   const closeDetail = () => {
-    stopRecording();
-    window.speechSynthesis.cancel();
-    setIsDetailClosing(true);
-    setTimeout(() => {
-        setSelectedItem(null);
-        setIsDetailClosing(false);
-    }, 300); // Wait for animation
+    // When manually closing via UI, we go back in history.
+    // This triggers the 'popstate' event which handles the actual UI closing.
+    window.history.back();
   };
 
   const handlePlay = (text: string, id: string) => {
@@ -598,7 +624,7 @@ export default function App() {
                   <Gamepad2 className="w-5 h-5 text-white" />
                 </div>
                 <h1 className="font-bold text-xl tracking-wide text-white drop-shadow-md">
-                  JP Gamer
+                  JPGamer
                 </h1>
              </div>
              <div className="flex items-center gap-2">
@@ -830,7 +856,7 @@ export default function App() {
               <div className="flex-1">
                  <h4 className="font-bold text-sm text-white mb-1">安装到 iPhone</h4>
                  <p className="text-xs text-neutral-400 leading-relaxed">
-                    点击浏览器底部工具栏的 <span className="font-bold text-blue-400">分享</span> 按钮，然后向下滑动选择 <span className="font-bold text-white">"添加到主屏幕"</span> 即可获得原生APP体验。
+                    点击浏览器底部工具栏的 <span className="font-bold text-blue-400">分享</span> 按钮，然后向下滑动选择 <span className="font-bold text-white">"添加到主屏幕"</span> 即可獲得原生APP体验。
                  </p>
               </div>
               <button onClick={() => setIsIOS(false)} className="p-1 text-neutral-500 hover:text-white transition-colors">
