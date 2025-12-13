@@ -5,7 +5,7 @@ import {
   Sword, Shield, Crosshair, Zap, Target, User, Bot, AlertCircle, Gamepad2, Download, Share,
   WifiOff, Star, Layers, Globe, Sparkles,
   Battery, Syringe, Box, Skull, Flame, Hexagon, Heart, Eye, Hand, Footprints, Clock, Coins, Speaker,
-  EyeOff, Settings2, Check, Mic2
+  EyeOff, Settings2, Check, Mic2, Radio
 } from 'lucide-react';
 import { CATEGORIES, VOCAB_DATA, VocabItem } from './constants';
 
@@ -593,7 +593,7 @@ export default function App() {
 
   return (
     <div 
-        className={`min-h-screen font-sans selection:bg-fuchsia-900 selection:text-white flex flex-col relative transition-colors duration-500 text-white overflow-x-hidden ${currentTheme.bgClass} ${lang === 'cn' ? 'font-noto-sc' : 'font-noto-tc'}`}
+        className={`h-[100dvh] font-sans selection:bg-fuchsia-900 selection:text-white flex flex-col relative transition-colors duration-500 text-white overflow-x-hidden ${currentTheme.bgClass} ${lang === 'cn' ? 'font-noto-sc' : 'font-noto-tc'}`}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -620,7 +620,7 @@ export default function App() {
                   <Gamepad2 className="w-5 h-5 text-white" />
                 </div>
                 <h1 className="font-bold text-xl tracking-wide text-white drop-shadow-md">
-                  JPGamer
+                  Tokyo Comms
                 </h1>
                 {!isOnline && (
                     <div className="flex items-center gap-1 px-2 py-0.5 bg-neutral-800/80 rounded-full border border-neutral-600 text-[10px] text-neutral-400">
@@ -680,9 +680,12 @@ export default function App() {
 
                  <button 
                    onClick={() => setShowFavorites(!showFavorites)}
-                   className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${showFavorites ? 'bg-yellow-500/20 text-yellow-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+                   className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all relative ${showFavorites ? 'bg-yellow-500/20 text-yellow-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
                  >
-                   <Star className={`w-5 h-5 ${showFavorites ? 'fill-current' : ''}`} />
+                   <div className="relative">
+                       <Star className={`w-5 h-5 ${showFavorites ? 'fill-current' : ''}`} />
+                       <span className="absolute -bottom-1.5 -right-1 text-[8px] font-bold scale-75 origin-top-left bg-black/50 px-0.5 rounded text-white/90">推</span>
+                   </div>
                    <span className="text-[10px] font-bold mt-0.5 leading-none">{uiText.favorite[lang]}</span>
                  </button>
 
@@ -695,16 +698,19 @@ export default function App() {
           </div>
           
           <div className="relative group">
-            <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-white transition-colors`} />
+            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center gap-1 pointer-events-none transition-colors duration-300 group-focus-within:text-white text-neutral-400">
+               <Gamepad2 className="w-3 h-3 opacity-70" />
+               <Search className="w-4 h-4" />
+            </div>
             <input 
               type="text" 
               placeholder={uiText.searchPlaceholder[lang]}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full bg-white/5 border border-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-neutral-500 focus:outline-none focus:bg-white/10 focus:border-white/20 transition-all backdrop-blur-sm ${activeTab === 'VALORANT' ? 'rounded-none' : 'rounded-xl'} ${activeTab === 'APEX' ? 'skew-x-[-10deg]' : ''}`}
+              className={`w-full bg-black/20 border border-white/10 py-3 pl-12 pr-4 text-sm text-white placeholder-white/50 focus:outline-none focus:bg-black/40 focus:border-white/30 transition-all backdrop-blur-md shadow-inner ${activeTab === 'VALORANT' ? 'rounded-none' : 'rounded-xl'} ${activeTab === 'APEX' ? 'skew-x-[-10deg]' : ''}`}
             />
              {searchTerm && (
-                <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-white">
+                <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-white">
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -733,7 +739,7 @@ export default function App() {
         </div>
       </div>
 
-      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-52 pb-28 relative z-10">
+      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-52 pb-40 relative z-10">
         <div key={activeTab + (showFavorites ? '-fav' : '') + lang} className={`space-y-3 ${animClass}`}>
           {filteredData.length > 0 ? (
             filteredData.map((item) => {
@@ -786,10 +792,10 @@ export default function App() {
 
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex justify-center pointer-events-none">
-          <div className={`w-full max-w-md flex flex-col h-full pointer-events-auto shadow-2xl relative overflow-hidden ${detailTheme.detailBgClass} ${isDetailClosing ? 'animate-overlay-exit' : 'animate-overlay-enter'}`}>
+          <div className={`w-full max-w-md flex flex-col h-[100dvh] pointer-events-auto shadow-2xl relative overflow-hidden ${detailTheme.detailBgClass} ${isDetailClosing ? 'animate-overlay-exit' : 'animate-overlay-enter'}`}>
             {detailTheme.bgOverlay}
             
-            <div className="px-4 py-4 flex items-center justify-between bg-black/40 backdrop-blur-md sticky top-0 z-20 border-b border-white/5">
+            <div className="px-4 py-4 flex items-center justify-between bg-black/40 backdrop-blur-md sticky top-0 z-50 border-b border-white/5">
                 <button onClick={closeDetail} className="p-2 -ml-2 text-neutral-400 hover:text-white transition-colors rounded-full hover:bg-white/10">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
@@ -815,7 +821,7 @@ export default function App() {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-20">
+            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-40 safe-pb">
                 <div className="px-6 pt-8 pb-6 text-center border-b border-white/5 relative">
                     <div className="absolute top-0 left-0 w-full h-[300px] z-0 overflow-hidden pointer-events-none">
                         <div className={`w-full h-full relative flex items-center justify-center overflow-hidden`}>
@@ -882,7 +888,7 @@ export default function App() {
 
             {showSettings && (
                 <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end animate-in fade-in" onClick={() => setShowSettings(false)}>
-                    <div className="w-full bg-[#18181b] border-t border-white/10 rounded-t-2xl p-6 space-y-6 animate-in slide-in-from-bottom-10" onClick={e => e.stopPropagation()}>
+                    <div className="w-full bg-[#18181b] border-t border-white/10 rounded-t-2xl p-6 space-y-6 animate-in slide-in-from-bottom-10 pb-16 safe-pb" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-2">
                             <h3 className="font-bold text-white flex items-center gap-2">
                                 <Settings2 className="w-4 h-4 text-neutral-400" />
