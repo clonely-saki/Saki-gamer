@@ -796,7 +796,7 @@ export default function App() {
              <div className="flex items-center gap-3">
                 <img src="/saiba.png" alt="Logo" className="w-8 h-8 rounded-lg shadow-lg shadow-fuchsia-500/20 object-cover border border-white/10" />
                 <h1 className="font-bold text-xl tracking-wide text-white drop-shadow-md">
-                  Tokyo Comms
+                  Saki comms
                 </h1>
                 {!isOnline && (
                     <div className="flex items-center gap-1 px-2 py-0.5 bg-neutral-800/80 rounded-full border border-neutral-600 text-[10px] text-neutral-400">
