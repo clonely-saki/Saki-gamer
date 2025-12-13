@@ -11,10 +11,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="JPGamer" />
     
-    <!-- Updated icons to match manifest PNGs for better compatibility -->
-    <link rel="icon" type="image/png" href="https://www.pwabuilder.com/assets/icons/icon_192.png" />
-    <link rel="apple-touch-icon" href="https://www.pwabuilder.com/assets/icons/icon_192.png" />
+    <!-- Use local SVG icon instead of external URL -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
 
+    <!-- Tailwind CDN. Note: For best performance in China, running 'npm install -D tailwindcss' 
+         and building locally is recommended, but this CDN usually works acceptably. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       body {
@@ -22,14 +24,21 @@
         color: #ffffff;
         overscroll-behavior-y: none;
       }
+      
+      /* Global utility to hide scrollbars */
+      .no-scrollbar {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
+      
       .no-scrollbar::-webkit-scrollbar {
         display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
+        width: 0;
+        height: 0;
+        background: transparent;
       }
     </style>
+    <!-- Removed importmap: Rely on Vite's local bundling for React to prevent version conflicts and network blocking -->
 <script type="importmap">
 {
   "imports": {
@@ -50,12 +59,12 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
+          navigator.serviceWorker.register('./sw.js')
             .then((registration) => {
               console.log('SW registered: ', registration.scope);
             })
             .catch((err) => {
-              console.log('SW registration failed: ', err);
+              console.warn('SW registration failed:', err);
             });
         });
       }

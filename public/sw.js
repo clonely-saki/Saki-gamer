@@ -1,13 +1,11 @@
-const CACHE_NAME = 'jpgamer-offline-v7';
+const CACHE_NAME = 'jpgamer-offline-v8';
 
 // Only cache the shell files during install.
 const URLS_TO_PRECACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  // Cache the icons defined in manifest to support offline install prompts
-  'https://www.pwabuilder.com/assets/icons/icon_192.png',
-  'https://www.pwabuilder.com/assets/icons/icon_512.png'
+  '/icon.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -15,11 +13,8 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('SW: Pre-caching shell');
-        // Note: caching external resources in addAll might fail if CORS is not set on them.
-        // PWABuilder assets usually allow CORS, but if this fails, the SW install might fail.
-        // To be safe, we wrap it.
         return cache.addAll(URLS_TO_PRECACHE).catch(err => {
-            console.warn('SW: Failed to cache some external assets', err);
+            console.warn('SW: Failed to cache some assets', err);
         });
       })
       .then(() => self.skipWaiting())
@@ -43,7 +38,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Strategy 1: HTML Navigation - Network First
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -64,7 +58,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy 2: Assets - Stale-While-Revalidate
   event.respondWith(
     caches.match(event.request)
       .then((cachedResponse) => {
@@ -77,7 +70,7 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         }).catch((err) => {
-            console.log('SW: Fetch failed for asset', err);
+            // Suppress log
         });
 
         return cachedResponse || fetchPromise;
