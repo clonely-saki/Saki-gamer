@@ -1,11 +1,14 @@
-const CACHE_NAME = 'jpgamer-offline-v12';
+const CACHE_NAME = 'tokyo-comms-v14';
 
 // Only cache the shell files during install.
+// Added PNGs to precache list assuming they will be generated.
 const URLS_TO_PRECACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon.svg'
+  '/icon-192.png',
+  '/icon-512.png',
+  '/saiba.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -14,7 +17,8 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         console.log('SW: Pre-caching shell');
         return cache.addAll(URLS_TO_PRECACHE).catch(err => {
-            console.warn('SW: Failed to cache some assets', err);
+            // It's okay if icons aren't there yet, don't break install
+            console.warn('SW: Some assets failed to cache (likely missing PNGs)', err);
         });
       })
       .then(() => self.skipWaiting())

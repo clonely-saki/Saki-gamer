@@ -1,6 +1,6 @@
 {
-  "name": "JP Gamer Vocab",
-  "short_name": "JP Gamer",
+  "name": "Tokyo Comms",
+  "short_name": "Tokyo Comms",
   "description": "专为玩家设计的日语词汇学习App。收录瓦罗兰特、Apex、守望先锋等游戏术语及生活常用语。",
   "id": "/",
   "start_url": "/",
@@ -11,36 +11,36 @@
   "categories": ["education", "games", "entertainment"],
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon.svg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon.svg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/icon.svg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "form_factor": "narrow",
       "label": "Home Screen"
     },
     {
-      "src": "/icon.svg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "form_factor": "wide",
       "label": "Learning Mode"
     }
