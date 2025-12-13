@@ -909,7 +909,7 @@ export default function App() {
         </div>
       </div>
 
-      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-40 pb-10 relative z-10">
+      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-52 pb-28 relative z-10">
         <div key={activeTab + (showFavorites ? '-fav' : '') + lang} className="space-y-3 animate-enter">
           {filteredData.length > 0 ? (
             filteredData.map((item) => {
