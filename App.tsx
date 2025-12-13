@@ -846,14 +846,6 @@ export default function App() {
                 )}
              </div>
              <div className="flex items-center gap-2">
-                 {/* APK Setup Button */}
-                 {!isStandalone && (
-                     <a href="/pwa-builder.html" className="flex flex-col items-center justify-center p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-all">
-                        <Settings className="w-5 h-5" />
-                        <span className="text-[10px] font-bold mt-0.5 leading-none">APK Setup</span>
-                     </a>
-                 )}
-
                  <button
                     onClick={toggleLang}
                     className="flex flex-col items-center justify-center p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-all"

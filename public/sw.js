@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpgamer-offline-v9';
+const CACHE_NAME = 'jpgamer-offline-v10';
 
 // Only cache the shell files during install.
 const URLS_TO_PRECACHE = [
@@ -6,6 +6,8 @@ const URLS_TO_PRECACHE = [
   '/index.html',
   '/manifest.json',
   '/icon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
   '/images/category-valorant.svg',
   '/images/category-apex.svg',
   '/images/category-ow.svg',
