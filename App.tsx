@@ -5,9 +5,32 @@ import {
   Sword, Shield, Crosshair, Zap, Target, User, Bot, AlertCircle, Gamepad2, Download, Share,
   WifiOff, Star, Layers, Globe, Sparkles,
   Battery, Syringe, Box, Skull, Flame, Hexagon, Heart, Eye, Hand, Footprints, Clock, Coins, Speaker,
-  EyeOff, Settings2, Check, Mic2, Radio
+  EyeOff, Settings2, Check, Mic2, Radio, Loader2, Leaf, Music2, Cpu
 } from 'lucide-react';
 import { CATEGORIES, VOCAB_DATA, VocabItem } from './constants';
+
+// --- Audio Helper Functions ---
+
+// Simple retry fetch helper
+async function fetchWithRetry(url: string, retries = 1): Promise<Response> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) return res;
+    } catch (err) {
+      if (i === retries) throw err;
+    }
+  }
+  throw new Error("Fetch failed after retries");
+}
+
+// PCM Audio Decoding
+async function decodeAudioData(
+  arrayBuffer: ArrayBuffer,
+  ctx: AudioContext,
+): Promise<AudioBuffer> {
+  return await ctx.decodeAudioData(arrayBuffer);
+}
 
 // --- Avatar Component ---
 const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
@@ -181,35 +204,6 @@ const getIconForTerm = (item: VocabItem) => {
     return <Sparkles />;
 };
 
-// Component to render the "thumbnail" using icons
-const VocabThumbnail = ({ item }: { item: VocabItem }) => {
-    const icon = getIconForTerm(item);
-    
-    // Style base on category
-    let bgClass = "bg-neutral-800";
-    let iconColor = "text-white";
-    
-    if (item.cat === 'VALORANT') {
-        bgClass = "bg-rose-900/30 border border-rose-500/30";
-        iconColor = "text-rose-400";
-    } else if (item.cat === 'APEX') {
-        bgClass = "bg-red-900/30 border border-red-500/30 skew-x-[-6deg]";
-        iconColor = "text-red-400 skew-x-[6deg]";
-    } else if (item.cat === 'OW') {
-        bgClass = "bg-orange-900/30 border border-orange-500/30";
-        iconColor = "text-orange-400";
-    } else {
-        bgClass = "bg-fuchsia-900/30 border border-fuchsia-500/30";
-        iconColor = "text-fuchsia-400";
-    }
-
-    return (
-        <div className={`w-full h-full flex items-center justify-center ${bgClass} shadow-inner`}>
-            {React.cloneElement(icon as React.ReactElement<any>, { className: `w-8 h-8 ${iconColor}` })}
-        </div>
-    );
-};
-
 export default function App() {
   const [activeTab, setActiveTab] = useState('ALL'); 
   const [selectedItem, setSelectedItem] = useState<VocabItem | null>(null); 
@@ -223,8 +217,28 @@ export default function App() {
   const [isMaskMode, setIsMaskMode] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [selectedGender, setSelectedGender] = useState<'female' | 'male'>('female');
-  const [showSettings, setShowSettings] = useState(false);
+  // showSettings removed in favor of inline controls
   
+  // Voice Engine State: Persist preference in localStorage, default to TRUE (VOICEVOX)
+  const [useVoicevox, setUseVoicevox] = useState(() => {
+      try {
+          const saved = localStorage.getItem('jpgamer_use_voicevox');
+          return saved !== null ? JSON.parse(saved) : true;
+      } catch (e) {
+          return true;
+      }
+  });
+
+  // Save voice preference whenever it changes
+  useEffect(() => {
+      localStorage.setItem('jpgamer_use_voicevox', JSON.stringify(useVoicevox));
+  }, [useVoicevox]);
+
+  const [isAiLoading, setIsAiLoading] = useState(false); 
+  
+  // Audio Context for AI Voice
+  const audioContextRef = useRef<AudioContext | null>(null);
+
   // Store filtered voice objects
   const [availableVoices, setAvailableVoices] = useState<{male: SpeechSynthesisVoice | null, female: SpeechSynthesisVoice | null}>({ male: null, female: null });
   // Ref to prevent garbage collection of utterance during playback
@@ -259,14 +273,6 @@ export default function App() {
 
   const toggleMaskMode = () => {
     setIsMaskMode(prev => !prev);
-  };
-
-  const cyclePlaybackSpeed = () => {
-      setPlaybackSpeed(prev => {
-          if (prev === 1.0) return 0.75;
-          if (prev === 0.75) return 0.5;
-          return 1.0;
-      });
   };
 
   const getLocalizedText = useCallback((item: VocabItem, field: 'meaning' | 'desc' | 'example') => {
@@ -357,9 +363,6 @@ export default function App() {
 
         bestMale = ja.find(v => maleNames.some(n => v.name.includes(n))) || null;
         bestFemale = ja.find(v => femaleNames.some(n => v.name.includes(n))) || null;
-
-        if (!bestMale) bestMale = ja.find(v => v.name.toLowerCase().includes('male')) || null;
-        if (!bestFemale) bestFemale = ja.find(v => v.name.toLowerCase().includes('female')) || null;
 
         const googleVoice = ja.find(v => v.name.includes('Google'));
         if (!bestFemale && googleVoice) bestFemale = googleVoice;
@@ -464,6 +467,10 @@ export default function App() {
 
   const handleVisualClose = useCallback(() => {
     window.speechSynthesis.cancel();
+    if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
+    }
     setIsDetailClosing(true);
     setTimeout(() => {
         setSelectedItem(null);
@@ -491,12 +498,150 @@ export default function App() {
     window.history.back();
   };
 
-  const handlePlay = (text: string, id: string) => {
+  const preprocessTextForTTS = (text: string) => {
+    // Replace 'ha' with 'wa' only when it serves as a topic marker particle
+    return text
+        // Pronouns & common nouns followed by 'ha'
+        .replace(/([俺私僕君彼彼女敵服場今日明日発言人推し])は/g, '$1わ')
+        // Demonstratives followed by 'ha'
+        .replace(/(これ|それ|あれ|どこ|ここ|そこ|あそこ)は/g, '$1わ')
+        // Common grammatical patterns
+        .replace(/のでは/g, 'のでわ')
+        .replace(/ては/g, 'てわ')
+        .replace(/では/g, 'でわ')
+        // Specific phrases in dataset known to fail on some engines
+        .replace(/逃げ場は/g, '逃げ場わ')
+        .replace(/俺は/g, '俺わ')
+        .replace(/午後は/g, '午後わ');
+  };
+
+  // --- VOICEVOX Multi-Turn Dialogue ---
+  const playVoicevoxAudio = async (text: string, id: string) => {
+      setPlayingId(id);
+      setIsAiLoading(true);
+
+      // Determine Speakers
+      // 3 = Zundamon (Female-ish/Cute)
+      // 13 = Aoyama Ryusei (Male/Cool)
+      
+      const primaryId = selectedGender === 'female' ? 3 : 13;
+      // If primary is female (Zundamon), secondary is male (Aoyama).
+      // If primary is male (Aoyama), secondary is female (Zundamon).
+      const secondaryId = selectedGender === 'female' ? 13 : 3;
+
+      const lines = text.split('\n').filter(l => l.trim() !== '');
+      const audioQueue: { text: string, speakerId: number }[] = [];
+
+      for (const line of lines) {
+          // Remove translations in parens (both half and full width)
+          const cleanLine = line.replace(/[\(（].*?[\)）]/g, '').trim();
+          if (!cleanLine) continue;
+
+          // Check if line starts with A: or B:
+          const match = cleanLine.match(/^([ABＡＢ][:：]?\s*)(.*)/i);
+          
+          if (match) {
+              // It's a dialogue line
+              const prefix = match[1];
+              const spokenText = match[2];
+              const isB = prefix.toUpperCase().includes('B') || prefix.includes('Ｂ');
+              
+              if (spokenText) {
+                  audioQueue.push({
+                      text: spokenText,
+                      speakerId: isB ? secondaryId : primaryId
+                  });
+              }
+          } else {
+              // Not a marked dialogue, treat as primary speaker (e.g. single sentence)
+              audioQueue.push({
+                  text: cleanLine,
+                  speakerId: primaryId
+              });
+          }
+      }
+
+      if (audioQueue.length === 0) {
+          setIsAiLoading(false);
+          setPlayingId(null);
+          return;
+      }
+
+      try {
+          // Note: Context creation is handled in handlePlay to support iOS
+          if (!audioContextRef.current) {
+              throw new Error("Audio Context not initialized");
+          }
+
+          // Fetch all audio buffers concurrently
+          const bufferPromises = audioQueue.map(async (item) => {
+              const url = `https://api.tts.quest/v3/voicevox/synthesis?text=${encodeURIComponent(item.text)}&speaker=${item.speakerId}`;
+              
+              // Use fetchWithRetry helper
+              const response = await fetchWithRetry(url);
+              
+              const data = await response.json();
+              if (!data.mp3StreamingUrl) throw new Error("No URL returned from API");
+              
+              const audioRes = await fetchWithRetry(data.mp3StreamingUrl);
+              const arrayBuffer = await audioRes.arrayBuffer();
+              
+              // Only decode if context is alive
+              if (audioContextRef.current) {
+                  return await audioContextRef.current.decodeAudioData(arrayBuffer);
+              }
+              throw new Error("Context lost");
+          });
+
+          const audioBuffers = await Promise.all(bufferPromises);
+          
+          setIsAiLoading(false);
+
+          // Play them sequentially
+          let startTime = audioContextRef.current.currentTime;
+          
+          // Add a small buffer for safety
+          if (startTime < 0) startTime = 0;
+          
+          audioBuffers.forEach((buffer, index) => {
+              if (!audioContextRef.current) return;
+              
+              const source = audioContextRef.current.createBufferSource();
+              source.buffer = buffer;
+              source.playbackRate.value = playbackSpeed;
+              source.connect(audioContextRef.current.destination);
+              
+              source.start(startTime);
+              
+              // Add duration + small gap (0.1s) to start time for next clip
+              // Need to account for playbackSpeed in duration calculation
+              const effectiveDuration = buffer.duration / playbackSpeed;
+              startTime += effectiveDuration + 0.1;
+
+              // If it's the last one, reset playing state after it ends
+              if (index === audioBuffers.length - 1) {
+                  source.onended = () => {
+                      setPlayingId(null);
+                  };
+              }
+          });
+
+      } catch (error) {
+          console.error("VOICEVOX Error:", error);
+          // Silent fallback to browser voice to not annoy user
+          handleBrowserPlay(text, id);
+      } finally {
+          // If error happened, loading is already false, but safe to set here if async not finished
+          if (isAiLoading) setIsAiLoading(false);
+      }
+  };
+
+  const handleBrowserPlay = (text: string, id: string) => {
     setPlayingId(id);
     const rawLines = text.split('\n');
     const cleanLines = rawLines.map(line => {
         const isB = line.trim().startsWith('B') || line.trim().startsWith('Ｂ');
-        const content = line.replace(/^([ABＡＢ][:：]?\s*)/i, '').replace(/\(.*\)/g, '').trim();
+        const content = line.replace(/^([ABＡＢ][:：]?\s*)/i, '').replace(/[\(（].*?[\)）]/g, '').trim();
         return { content, isB };
     }).filter(l => l.content.length > 0);
 
@@ -507,7 +652,9 @@ export default function App() {
             return;
         }
         const line = cleanLines[index];
-        const u = new SpeechSynthesisUtterance(line.content);
+        const textToSpeak = preprocessTextForTTS(line.content);
+        
+        const u = new SpeechSynthesisUtterance(textToSpeak);
         utteranceRef.current = u; 
         
         u.lang = 'ja-JP';
@@ -543,6 +690,30 @@ export default function App() {
     };
     window.speechSynthesis.cancel();
     playNext();
+  };
+
+  const handlePlay = (text: string, id: string) => {
+      // 1. Stop existing playback
+      window.speechSynthesis.cancel();
+      
+      // 2. Initialize or Resume AudioContext IMMEDIATELY on User Gesture (Critical for iOS)
+      if (!audioContextRef.current) {
+          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume().catch(e => console.error("Audio resume failed", e));
+      }
+
+      if (!isOnline && useVoicevox) {
+          handleBrowserPlay(text, id);
+          return;
+      }
+
+      if (useVoicevox) {
+          playVoicevoxAudio(text, id);
+      } else {
+          handleBrowserPlay(text, id);
+      }
   };
 
   const renderChatBubbles = (exampleText: string) => {
@@ -631,7 +802,7 @@ export default function App() {
              </div>
              <div className="flex items-center gap-2">
                  
-                 {/* --- NEW Language Selector: Dynamic Pill Animation --- */}
+                 {/* --- Language Selector --- */}
                  <div className="relative z-50 h-9 flex items-center justify-end">
                      {showLangMenu && (
                          <div 
@@ -647,7 +818,6 @@ export default function App() {
                                 : 'w-9 bg-transparent border-transparent rounded-lg'
                         }`}
                      >
-                        {/* Closed State: Globe Icon (Morphs out) */}
                         <button
                             onClick={() => setShowLangMenu(true)}
                             className={`absolute left-0 top-0 w-9 h-9 flex flex-col items-center justify-center transition-all duration-300 ${
@@ -658,7 +828,6 @@ export default function App() {
                             <span className="text-[10px] font-bold mt-0.5 leading-none">{lang === 'cn' ? 'CN' : (lang === 'hk' ? 'HK' : 'TW')}</span>
                         </button>
 
-                        {/* Open State: Options (Slide & Fade in) */}
                         <div className={`flex items-center justify-between w-full h-full transition-all duration-500 ${showLangMenu ? 'opacity-100 translate-x-0 delay-75' : 'opacity-0 translate-x-4 pointer-events-none'}`}>
                             <button onClick={() => selectLang('cn')} className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${lang === 'cn' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'}`}>CN</button>
                             <div className="w-px h-3 bg-white/10"></div>
@@ -668,7 +837,6 @@ export default function App() {
                         </div>
                      </div>
                  </div>
-                 {/* --- End Language Selector --- */}
 
                  <button
                     onClick={toggleMaskMode}
@@ -807,12 +975,6 @@ export default function App() {
                 
                 <div className="flex items-center gap-1 -mr-2">
                     <button 
-                        onClick={() => setShowSettings(true)}
-                        className="p-2 text-neutral-400 hover:text-white transition-colors rounded-full hover:bg-white/10"
-                    >
-                        <Settings2 className="w-6 h-6" />
-                    </button>
-                    <button 
                         onClick={(e) => toggleFavorite(e, selectedItem.id)}
                         className={`p-2 rounded-full transition-colors ${favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-neutral-400'}`}
                     >
@@ -821,7 +983,7 @@ export default function App() {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-40 safe-pb">
+            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-64 safe-pb">
                 <div className="px-6 pt-8 pb-6 text-center border-b border-white/5 relative">
                     <div className="absolute top-0 left-0 w-full h-[300px] z-0 overflow-hidden pointer-events-none">
                         <div className={`w-full h-full relative flex items-center justify-center overflow-hidden`}>
@@ -844,14 +1006,14 @@ export default function App() {
                     </h1>
                     
                     <button 
-                        onClick={() => handlePlay(selectedItem.term, 'term')}
+                        onClick={() => handlePlay(selectedItem.kana || selectedItem.term, 'term')}
                         className={`group/term relative z-10 inline-flex items-center justify-center gap-2 px-4 py-2 mt-1 mx-auto rounded-lg transition-all active:scale-95 hover:bg-white/5 cursor-pointer`}
                     >
                         <p className={`text-2xl font-bold font-mono tracking-wide drop-shadow-md ${detailTheme.accentColorClass}`}>
                             {selectedItem.term}
                         </p>
                         <div className={`text-neutral-500 group-hover/term:text-white transition-colors ${playingId === 'term' ? 'text-white' : ''}`}>
-                             {playingId === 'term' ? <Volume2 className="w-5 h-5 animate-pulse" /> : <Volume2 className="w-5 h-5" />}
+                             {playingId === 'term' ? (isAiLoading && useVoicevox ? <Loader2 className="w-5 h-5 animate-spin" /> : <Volume2 className="w-5 h-5 animate-pulse" />) : <Volume2 className="w-5 h-5" />}
                         </div>
                     </button>
                     
@@ -875,7 +1037,10 @@ export default function App() {
                                 onClick={() => handlePlay(getLocalizedText(selectedItem, 'example'), 'ex')}
                                 className={`flex items-center gap-2 px-3 py-1.5 text-white transition-all active:scale-95 shadow-lg hover:brightness-110 relative z-20 ${detailTheme.buttonClass}`}
                             >
-                                {playingId === 'ex' ? <Volume2 className="w-3 h-3 animate-pulse" /> : <Play className="w-3 h-3" />}
+                                {playingId === 'ex' 
+                                    ? (isAiLoading && useVoicevox ? <Loader2 className="w-3 h-3 animate-spin" /> : <Volume2 className="w-3 h-3 animate-pulse" />)
+                                    : <Play className="w-3 h-3" />
+                                }
                                 <span className={`text-[10px] font-bold not-italic ${selectedItem.cat === 'APEX' ? 'skew-x-[10deg] inline-block' : ''}`}>{uiText.play[lang]}</span>
                             </button>
                         </div>
@@ -886,56 +1051,75 @@ export default function App() {
                 </div>
             </div>
 
-            {showSettings && (
-                <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end animate-in fade-in" onClick={() => setShowSettings(false)}>
-                    <div className="w-full bg-[#18181b] border-t border-white/10 rounded-t-2xl p-6 space-y-6 animate-in slide-in-from-bottom-10 pb-16 safe-pb" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-bold text-white flex items-center gap-2">
-                                <Settings2 className="w-4 h-4 text-neutral-400" />
-                                Voice Settings
-                            </h3>
-                            <button onClick={() => setShowSettings(false)}><X className="w-5 h-5 text-neutral-400" /></button>
+            {/* Permanent Bottom Voice Control Bar */}
+            <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0c]/90 backdrop-blur-md border-t border-white/10 z-50 safe-pb">
+                 <div className="px-4 py-3 space-y-3">
+                    
+                    {/* Character Selection */}
+                    <div className="grid grid-cols-2 gap-3">
+                         {/* Female Character (Zundamon) */}
+                         <button
+                            onClick={() => setSelectedGender('female')}
+                            className={`relative h-14 rounded-xl border transition-all overflow-hidden group ${selectedGender === 'female' ? 'bg-fuchsia-900/40 border-fuchsia-500/50 shadow-[0_0_15px_-3px_rgba(217,70,239,0.3)]' : 'bg-neutral-800/40 border-white/5 hover:bg-white/5'}`}
+                         >
+                            <div className="absolute inset-0 flex items-center justify-center gap-3">
+                                <div className={`p-2 rounded-lg ${selectedGender === 'female' ? 'bg-fuchsia-500 text-white shadow-lg' : 'bg-neutral-700 text-neutral-400'}`}>
+                                    <Sparkles className="w-5 h-5" />
+                                </div>
+                                <div className="text-left">
+                                    <div className={`text-xs font-bold leading-none ${selectedGender === 'female' ? 'text-white' : 'text-neutral-400'}`}>Zundamon</div>
+                                    <div className="text-[9px] text-white/40 font-mono mt-1">CV: 萌系少女</div>
+                                </div>
+                            </div>
+                            {selectedGender === 'female' && <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-bl from-fuchsia-500/20 to-transparent"></div>}
+                         </button>
+
+                         {/* Male Character (Aoyama) */}
+                         <button
+                            onClick={() => setSelectedGender('male')}
+                            className={`relative h-14 rounded-xl border transition-all overflow-hidden group ${selectedGender === 'male' ? 'bg-cyan-900/40 border-cyan-500/50 shadow-[0_0_15px_-3px_rgba(6,182,212,0.3)]' : 'bg-neutral-800/40 border-white/5 hover:bg-white/5'}`}
+                         >
+                            <div className="absolute inset-0 flex items-center justify-center gap-3">
+                                <div className={`p-2 rounded-lg ${selectedGender === 'male' ? 'bg-cyan-500 text-black shadow-lg' : 'bg-neutral-700 text-neutral-400'}`}>
+                                    <Zap className="w-5 h-5 fill-current" />
+                                </div>
+                                <div className="text-left">
+                                    <div className={`text-xs font-bold leading-none ${selectedGender === 'male' ? 'text-white' : 'text-neutral-400'}`}>Ryusei</div>
+                                    <div className="text-[9px] text-white/40 font-mono mt-1">CV: 热血少年</div>
+                                </div>
+                            </div>
+                            {selectedGender === 'male' && <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-bl from-cyan-500/20 to-transparent"></div>}
+                         </button>
+                    </div>
+
+                    {/* Controls Row */}
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 flex bg-neutral-900/50 rounded-lg p-1 border border-white/5">
+                            {[0.5, 0.75, 1.0].map(s => (
+                                <button 
+                                    key={s}
+                                    onClick={() => setPlaybackSpeed(s)}
+                                    className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${playbackSpeed === s ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                >
+                                    {s}x
+                                </button>
+                            ))}
                         </div>
                         
-                        <div className="space-y-3">
-                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Playback Speed</label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {[0.5, 0.75, 1.0].map(s => (
-                                    <button 
-                                        key={s}
-                                        onClick={() => setPlaybackSpeed(s)}
-                                        className={`py-2 rounded-lg text-sm font-bold transition-all ${playbackSpeed === s ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400'}`}
-                                    >
-                                        {s}x
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        <div className="h-6 w-px bg-white/10"></div>
 
-                        <div className="space-y-3">
-                             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Voice Tone / 声音</label>
-                             <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={() => setSelectedGender('female')}
-                                    className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${selectedGender === 'female' ? 'bg-fuchsia-500/20 border-fuchsia-500 text-white' : 'bg-neutral-800 border-transparent text-neutral-400 hover:bg-neutral-700'}`}
-                                >
-                                    <div className="text-2xl mb-1">👧</div>
-                                    <span className="font-bold text-sm">Female</span>
-                                    <span className="text-[10px] opacity-50 truncate w-full text-center mt-1">{availableVoices.female?.name.split(' ')[0] || 'Default'}</span>
-                                </button>
-                                <button
-                                    onClick={() => setSelectedGender('male')}
-                                    className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${selectedGender === 'male' ? 'bg-blue-500/20 border-blue-500 text-white' : 'bg-neutral-800 border-transparent text-neutral-400 hover:bg-neutral-700'}`}
-                                >
-                                    <div className="text-2xl mb-1">👦</div>
-                                    <span className="font-bold text-sm">Male</span>
-                                    <span className="text-[10px] opacity-50 truncate w-full text-center mt-1">{availableVoices.male?.name.split(' ')[0] || 'Default'}</span>
-                                </button>
-                             </div>
-                        </div>
+                        <button 
+                            onClick={() => setUseVoicevox(!useVoicevox)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${useVoicevox ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-neutral-800 border-white/5 text-neutral-500'}`}
+                        >
+                            <div className={`w-2 h-2 rounded-full ${useVoicevox ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-600'}`}></div>
+                            <span className="text-[10px] font-bold">{useVoicevox ? 'ONLINE AI' : 'OFFLINE'}</span>
+                        </button>
                     </div>
-                </div>
-            )}
+
+                 </div>
+            </div>
+
           </div>
         </div>
       )}
