@@ -25,11 +25,11 @@ const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
   if (cat === 'APEX') {
     return (
       <div className="w-10 h-10 relative flex items-center justify-center">
-        <div className={`absolute inset-0 w-full h-full clip-path-polygon-[50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%] ${isA ? 'bg-gradient-to-b from-orange-600 to-red-700' : 'bg-gradient-to-b from-neutral-600 to-neutral-800'}`}></div>
+        <div className={`absolute inset-0 w-full h-full [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)] ${isA ? 'bg-gradient-to-b from-orange-600 to-red-700' : 'bg-gradient-to-b from-neutral-600 to-neutral-800'}`}></div>
         <div className="relative z-10 text-white font-bold text-xs tracking-tighter">
             {isA ? "ATK" : "DEF"}
         </div>
-        <div className="absolute inset-0 border border-white/30 clip-path-polygon-[50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%] pointer-events-none"></div>
+        <div className="absolute inset-0 border border-white/30 [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)] pointer-events-none"></div>
       </div>
     );
   }
@@ -292,10 +292,10 @@ export default function App() {
       offlineMode: { cn: "离线模式", tw: "離線模式", hk: "離線模式" },
       favorite: { cn: "收藏", tw: "收藏", hk: "收藏" },
       install: { cn: "安装", tw: "安裝", hk: "安裝" },
-      lifeCat: { cn: "生活", tw: "生活", hk: "生活" },
+      lifeCat: { cn: "常用", tw: "常用", hk: "常用" },
       noResults: { cn: "没有找到相关词汇", tw: "沒有找到相關詞彙", hk: "搵唔到相關詞彙" },
       noFavs: { cn: "本分类下暂无收藏", tw: "本分類下暫無收藏", hk: "呢個分類暫無收藏" },
-      lifeScene: { cn: "生活场景", tw: "生活場景", hk: "生活場景" },
+      lifeScene: { cn: "常用场景", tw: "常用場景", hk: "常用場景" },
       gameVoice: { cn: "游戏语音", tw: "遊戲語音", hk: "遊戲語音" },
       play: { cn: "播放", tw: "播放", hk: "播放" },
       iosTitle: { cn: "安装到 iPhone", tw: "安裝到 iPhone", hk: "安裝到 iPhone" },
@@ -558,7 +558,7 @@ export default function App() {
           if (!displayContent) return null;
 
           const bubbleStyle = isB 
-            ? category === 'VALORANT' ? 'bg-[#ff4655] rounded-none clip-path-polygon-[0_0,100%_0,100%_100%,10%_100%,0_85%]'
+            ? category === 'VALORANT' ? 'bg-[#ff4655] rounded-none [clip-path:polygon(0_0,100%_0,100%_100%,10%_100%,0_85%)]'
               : category === 'APEX' ? 'bg-[#da292a] skew-x-[-10deg]'
               : category === 'OW' ? 'bg-[#f99e1a] text-[#131519] rounded-sm italic border-l-2 border-white/50'
               : 'bg-gradient-to-br from-fuchsia-600 to-indigo-600 rounded-xl rounded-br-sm'
