@@ -1,99 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
-  Play, Mic, Search, X, Volume2, 
-  StopCircle, ChevronLeft, MessageCircle, MoreHorizontal,
+  Play, Search, X, Volume2, 
+  ChevronLeft, MessageCircle, 
   Sword, Shield, Crosshair, Zap, Target, User, Bot, AlertCircle, Gamepad2, Download, Share,
-  Trophy, WifiOff, Activity, Star, Layers, Globe, ImageIcon, Sparkles,
-  Battery, Syringe, Box, Skull, Flame, Hexagon, Heart, Eye, Hand, Footprints, Clock, Coins, Speaker, Settings
+  WifiOff, Star, Layers, Globe, Sparkles,
+  Battery, Syringe, Box, Skull, Flame, Hexagon, Heart, Eye, Hand, Footprints, Clock, Coins, Speaker,
+  EyeOff, Settings2, Check, Mic2
 } from 'lucide-react';
 import { CATEGORIES, VOCAB_DATA, VocabItem } from './constants';
-
-// --- Local Feedback Database ---
-const FEEDBACK_DB: Record<string, { perfect: string[], good: string[], ok: string[], bad: string[] }> = {
-  VALORANT: {
-    perfect: ["ACE! 完璧な発音だ！(ACE! 完美的发音！)", "クラッチ！その調子だ。(关键局拿下！保持这状态。)", "エイム神ってるね！(瞄准太神了！)"],
-    good: ["ナイス！悪くない。(Nice！还不错。)", "リコイル制御できてるね。(后座力压得不错。)", "ファントムより安定してる。(比幻象还稳。)"],
-    ok: ["惜しい！もう一本。(可惜！再来一局。)", "立ち回りはいい、発音を修正しよう。(身法不错，修正下发音。)", "アルティメット準備中...(大招充能中...)"],
-    bad: ["フィードしてるぞ。練習場に行こう。(在送了。去靶场练练吧。)", "トキシックにならず、練習だ。(别压力队友，练枪去。)", "FF投票する？いや、まだ行ける！(投降吗？不，还能打！)"]
-  },
-  APEX: {
-    perfect: ["チャンピオン！最高の発音だ。(捍卫者！最棒的发音。)", "キルリーダー撃破！(击杀王被干掉了！)", "プレデター級の発音！(猎杀者级别的发音！)"],
-    good: ["ナイスワン！(Nice one!)", "シールドを割った、その調子！(碎甲了，继续！)", "紫アーマーレベルだね。(紫甲水平。)"],
-    ok: ["バッテリーを巻こう。(打个大电吧。)", "アンチが痛い、急ごう。(毒圈很疼，快跑。)", "リスポーンビーコンを探そう。(找个复活台吧。)"],
-    bad: ["部隊壊滅... 降下し直そう。(全队阵亡... 重新跳伞吧。)", "初動死は避けよう。(避免落地成盒啊。)", "ドームが遅かったな。(罩子给晚了。)"]
-  },
-  OW: {
-    perfect: ["POTG！素晴らしい。(全场最佳！太棒了。)", "グランドマスター級だ！(宗师段位！)", "チームを救ったな！(你拯救了团队！)"],
-    good: ["ペイロードは進んでいる。(车在推了。)", "ナイスヒール！(奶得好！)", "ウルトが刺さったね。(大招放得好。)"],
-    ok: ["ヒールが必要ね。(需要治疗。)", "グループアップしよう。(集合集合。)", "C9に気をつけろ。(小心C9。)"],
-    bad: ["トロール行為はやめて。(别演了。)", "ピック変更が必要かも。(可能需要换英雄了。)", "リスポーン待ち...(等待复活...)"]
-  },
-  LIFE: {
-    perfect: ["完璧！ネイティブみたい。(完美！像母语者一样。)", "すごい！その通りです。(厉害！就是这样。)", "ブラボー！(太棒了！)"],
-    good: ["とても上手です！(很棒！)", "いい感じ！(感觉不错！)", "自信を持って！(保持自信！)"],
-    ok: ["もう少し！(差一点点！)", "アクセントに気をつけて。(注意重音。)", "もう一度聞いてみよう。(再听一遍试试。)"],
-    bad: ["諦めないで！(别放弃！)", "ゆっくり練習しよう。(慢慢练习。)", "難しいね、でも大丈夫。(很难吧，但没关系。)"]
-  }
-};
-
-const getRandomFeedback = (category: string, score: number) => {
-  const db = FEEDBACK_DB[category] || FEEDBACK_DB['LIFE'];
-  let pool = [];
-  
-  if (score === 100) pool = db.perfect;
-  else if (score >= 80) pool = db.good;
-  else if (score >= 50) pool = db.ok;
-  else pool = db.bad;
-
-  const randomIndex = Math.floor(Math.random() * pool.length);
-  return pool[randomIndex];
-};
-
-// --- Levenshtein Distance Algorithm ---
-const levenshteinDistance = (a: string, b: string): number => {
-  const matrix = [];
-  for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
-  for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
-      }
-    }
-  }
-  return matrix[b.length][a.length];
-};
-
-const toHiragana = (str: string) => {
-  return str.replace(/[\u30a1-\u30f6]/g, (match) => {
-    const chr = match.charCodeAt(0) - 0x60;
-    return String.fromCharCode(chr);
-  });
-};
-
-const calculateScore = (target: string, transcript: string): number => {
-  if (!transcript || transcript.length === 0) return 0;
-  
-  const normalize = (str: string) => {
-    let s = str.replace(/[^a-zA-Z0-9ぁ-んァ-ン一-龯]/g, "").toLowerCase();
-    return toHiragana(s);
-  };
-
-  const cleanTarget = normalize(target);
-  const cleanTrans = normalize(transcript);
-
-  if (cleanTarget.length === 0) return 0;
-  if (cleanTrans === cleanTarget) return 100;
-  if (cleanTrans.includes(cleanTarget)) return 100;
-
-  const distance = levenshteinDistance(cleanTarget, cleanTrans);
-  const maxLength = Math.max(cleanTarget.length, cleanTrans.length);
-  
-  const similarity = (1 - distance / maxLength) * 100;
-  return Math.max(0, Math.floor(similarity));
-};
 
 // --- Avatar Component ---
 const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
@@ -195,7 +109,7 @@ const THEME_STYLES: Record<string, {
       </div>
     ),
     accentColorClass: "text-[#ff4655]",
-    buttonClass: "bg-[#ff4655] rounded-none uppercase tracking-wider font-bold clip-path-polygon-[0_0,100%_0,100%_80%,92%_100%,0_100%]",
+    buttonClass: "bg-[#ff4655] rounded-none uppercase tracking-wider font-bold [clip-path:polygon(0_0,100%_0,100%_80%,92%_100%,0_100%)]",
     detailBgClass: "bg-[#0f1923]"
   },
   APEX: {
@@ -301,8 +215,21 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState<VocabItem | null>(null); 
   const [searchTerm, setSearchTerm] = useState("");
   const [isOnline, setIsOnline] = useState(true);
-  const [lang, setLang] = useState<'cn' | 'tw'>('cn'); 
+  const [lang, setLang] = useState<'cn' | 'tw' | 'hk'>('cn'); 
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const [animClass, setAnimClass] = useState('animate-enter');
+
+  // New State for features
+  const [isMaskMode, setIsMaskMode] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
+  const [selectedGender, setSelectedGender] = useState<'female' | 'male'>('female');
+  const [showSettings, setShowSettings] = useState(false);
   
+  // Store filtered voice objects
+  const [availableVoices, setAvailableVoices] = useState<{male: SpeechSynthesisVoice | null, female: SpeechSynthesisVoice | null}>({ male: null, female: null });
+  // Ref to prevent garbage collection of utterance during playback
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
   const [favorites, setFavorites] = useState<string[]>(() => {
       try {
           const saved = localStorage.getItem('jpgamer_favorites');
@@ -325,12 +252,31 @@ export default function App() {
       });
   };
 
-  const toggleLang = () => {
-    setLang(prev => prev === 'cn' ? 'tw' : 'cn');
+  const selectLang = (newLang: 'cn' | 'tw' | 'hk') => {
+    setLang(newLang);
+    setShowLangMenu(false);
+  };
+
+  const toggleMaskMode = () => {
+    setIsMaskMode(prev => !prev);
+  };
+
+  const cyclePlaybackSpeed = () => {
+      setPlaybackSpeed(prev => {
+          if (prev === 1.0) return 0.75;
+          if (prev === 0.75) return 0.5;
+          return 1.0;
+      });
   };
 
   const getLocalizedText = useCallback((item: VocabItem, field: 'meaning' | 'desc' | 'example') => {
       if (lang === 'cn') return item[field];
+      if (lang === 'hk') {
+         if (field === 'meaning') return item.meaning_hk || item.meaning_tw || item.meaning;
+         if (field === 'desc') return item.desc_hk || item.desc_tw || item.desc;
+         if (field === 'example') return item.example_hk || item.example_tw || item.example;
+      }
+      // TW
       if (field === 'meaning') return item.meaning_tw || item.meaning;
       if (field === 'desc') return item.desc_tw || item.desc;
       if (field === 'example') return item.example_tw || item.example;
@@ -341,40 +287,27 @@ export default function App() {
       searchPlaceholder: {
           cn: showFavorites ? "搜索收藏..." : "搜索...",
           tw: showFavorites ? "搜尋收藏..." : "搜尋...",
+          hk: showFavorites ? "搜尋收藏..." : "搜尋...",
       },
-      offlineMode: { cn: "离线模式", tw: "離線模式" },
-      voiceOffline: { cn: "语音离线包", tw: "語音離線包" },
-      favorite: { cn: "收藏", tw: "收藏" },
-      install: { cn: "安装", tw: "安裝" },
-      lifeCat: { cn: "生活", tw: "生活" },
-      noResults: { cn: "没有找到相关词汇", tw: "沒有找到相關詞彙" },
-      noFavs: { cn: "本分类下暂无收藏", tw: "本分類下暫無收藏" },
-      lifeScene: { cn: "生活场景", tw: "生活場景" },
-      gameVoice: { cn: "游戏语音", tw: "遊戲語音" },
-      play: { cn: "播放", tw: "播放" },
-      listen: { cn: "正在聆听...", tw: "正在聆聽..." },
-      challenge: { cn: "跟读挑战", tw: "跟讀挑戰" },
-      detecting: { cn: "检测声音中...", tw: "檢測聲音中..." },
-      iosTitle: { cn: "安装到 iPhone", tw: "安裝到 iPhone" },
+      offlineMode: { cn: "离线模式", tw: "離線模式", hk: "離線模式" },
+      favorite: { cn: "收藏", tw: "收藏", hk: "收藏" },
+      install: { cn: "安装", tw: "安裝", hk: "安裝" },
+      lifeCat: { cn: "生活", tw: "生活", hk: "生活" },
+      noResults: { cn: "没有找到相关词汇", tw: "沒有找到相關詞彙", hk: "搵唔到相關詞彙" },
+      noFavs: { cn: "本分类下暂无收藏", tw: "本分類下暫無收藏", hk: "呢個分類暫無收藏" },
+      lifeScene: { cn: "生活场景", tw: "生活場景", hk: "生活場景" },
+      gameVoice: { cn: "游戏语音", tw: "遊戲語音", hk: "遊戲語音" },
+      play: { cn: "播放", tw: "播放", hk: "播放" },
+      iosTitle: { cn: "安装到 iPhone", tw: "安裝到 iPhone", hk: "安裝到 iPhone" },
       iosDesc: { 
           cn: (<span>点击浏览器底部工具栏的 <span className="font-bold text-blue-400">分享</span> 按钮，然后向下滑动选择 <span className="font-bold text-white">"添加到主屏幕"</span> 即可獲得原生APP体验。</span>), 
-          tw: (<span>點擊瀏覽器底部工具欄的 <span className="font-bold text-blue-400">分享</span> 按鈕，然後向下滑動選擇 <span className="font-bold text-white">"加入主畫面"</span> 即可獲得原生APP體驗。</span>) 
+          tw: (<span>點擊瀏覽器底部工具欄的 <span className="font-bold text-blue-400">分享</span> 按鈕，然後向下滑動選擇 <span className="font-bold text-white">"加入主畫面"</span> 即可獲得原生APP體驗。</span>),
+          hk: (<span>點擊瀏覽器底部工具欄嘅 <span className="font-bold text-blue-400">分享</span> 按鈕，然後向下滑動選擇 <span className="font-bold text-white">"加入主畫面"</span> 即可獲得原生APP體驗。</span>) 
       }
   };
 
   const [playingId, setPlayingId] = useState<string | null>(null);
-  const [recording, setRecording] = useState(false);
-  const [score, setScore] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState("");
-  const [coachTip, setCoachTip] = useState<string | null>(null);
   
-  const [audioLevel, setAudioLevel] = useState(0);
-  const [fallbackMode, setFallbackMode] = useState(false); 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-
   const [isDetailClosing, setIsDetailClosing] = useState(false);
   
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -384,10 +317,6 @@ export default function App() {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const minSwipeDistance = 50;
-
-  const recognitionRef = useRef<any>(null);
-  const timeoutRef = useRef<number | null>(null); 
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   const currentTheme = THEME_STYLES[activeTab] || THEME_STYLES['LIFE'];
   const detailTheme = selectedItem ? (THEME_STYLES[selectedItem.cat] || THEME_STYLES['LIFE']) : currentTheme;
@@ -418,15 +347,33 @@ export default function App() {
 
     const loadVoices = () => {
         const all = window.speechSynthesis.getVoices();
-        const ja = all.filter(v => v.lang.includes('ja'));
-        ja.sort((a, b) => {
-             if (a.localService === b.localService) return 0;
-             return a.localService ? -1 : 1;
-        });
-        setVoices(ja);
+        const ja = all.filter(v => v.lang.includes('ja') || v.lang.includes('JP'));
+        
+        let bestMale: SpeechSynthesisVoice | null = null;
+        let bestFemale: SpeechSynthesisVoice | null = null;
+
+        const maleNames = ['Otoya', 'Ichiro', 'Keita', 'Takumi'];
+        const femaleNames = ['Kyoko', 'Haruka', 'Ayumi', 'Nanami']; 
+
+        bestMale = ja.find(v => maleNames.some(n => v.name.includes(n))) || null;
+        bestFemale = ja.find(v => femaleNames.some(n => v.name.includes(n))) || null;
+
+        if (!bestMale) bestMale = ja.find(v => v.name.toLowerCase().includes('male')) || null;
+        if (!bestFemale) bestFemale = ja.find(v => v.name.toLowerCase().includes('female')) || null;
+
+        const googleVoice = ja.find(v => v.name.includes('Google'));
+        if (!bestFemale && googleVoice) bestFemale = googleVoice;
+        
+        if (!bestFemale && ja.length > 0) bestFemale = ja[0];
+        if (!bestMale && ja.length > 0) bestMale = ja.length > 1 ? ja[1] : ja[0];
+
+        setAvailableVoices({ male: bestMale, female: bestFemale });
     };
+    
     loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
 
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -448,7 +395,6 @@ export default function App() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      cancelAudioVisualization();
     };
   }, []);
 
@@ -458,6 +404,29 @@ export default function App() {
     deferredPrompt.userChoice.then((choiceResult: any) => {
       setDeferredPrompt(null);
     });
+  };
+
+  const handleTabChange = (newTabId: string) => {
+    if (newTabId === activeTab) return;
+    
+    const oldIndex = CATEGORIES.findIndex(c => c.id === activeTab);
+    const newIndex = CATEGORIES.findIndex(c => c.id === newTabId);
+    
+    if (oldIndex !== -1 && newIndex !== -1) {
+        if (oldIndex === CATEGORIES.length - 1 && newIndex === 0) {
+            setAnimClass('animate-slide-right');
+        } else if (oldIndex === 0 && newIndex === CATEGORIES.length - 1) {
+            setAnimClass('animate-slide-left');
+        } else if (newIndex > oldIndex) {
+            setAnimClass('animate-slide-right');
+        } else {
+            setAnimClass('animate-slide-left');
+        }
+    } else {
+        setAnimClass('animate-enter');
+    }
+    
+    setActiveTab(newTabId);
   };
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -482,161 +451,25 @@ export default function App() {
         if (currentIndex === -1) return;
 
         if (isLeftSwipe) {
+            const currentIndex = CATEGORIES.findIndex(c => c.id === activeTab);
             const nextIndex = (currentIndex + 1) % CATEGORIES.length;
-            setActiveTab(CATEGORIES[nextIndex].id);
+            handleTabChange(CATEGORIES[nextIndex].id);
         } else {
+            const currentIndex = CATEGORIES.findIndex(c => c.id === activeTab);
             const prevIndex = (currentIndex - 1 + CATEGORIES.length) % CATEGORIES.length;
-            setActiveTab(CATEGORIES[prevIndex].id);
+            handleTabChange(CATEGORIES[prevIndex].id);
         }
     }
-  };
-
-  const startAudioVisualization = async () => {
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaStreamRef.current = stream;
-      
-      const analyser = audioContextRef.current.createAnalyser();
-      analyser.fftSize = 256;
-      analyserRef.current = analyser;
-      
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyser);
-      
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      const update = () => {
-        if (!analyserRef.current) return;
-        analyserRef.current.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < bufferLength; i++) {
-            sum += dataArray[i];
-        }
-        const avg = sum / bufferLength;
-        setAudioLevel(avg); 
-        
-        if (fallbackMode && recording && avg > 50) {
-             if (!timeoutRef.current) {
-                 timeoutRef.current = window.setTimeout(() => {
-                     finishRecording(selectedItem?.term || "...");
-                 }, 800);
-             }
-        }
-        animationFrameRef.current = requestAnimationFrame(update);
-      };
-      update();
-    } catch (err) {
-      console.error("Visualizer Error:", err);
-    }
-  };
-
-  const cancelAudioVisualization = () => {
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-        mediaStreamRef.current = null;
-    }
-    setAudioLevel(0);
-  };
-
-  const finishRecording = useCallback((transcript: string) => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (!selectedItem) return;
-    
-    let finalScore = 0;
-    let feedbackText = "";
-    
-    if (fallbackMode) {
-        finalScore = Math.random() > 0.5 ? 100 : 85; 
-        feedbackText = lang === 'cn' ? "声音已检测 (离线模式)" : "聲音已檢測 (離線模式)";
-    } else {
-        const scoreTerm = calculateScore(selectedItem.term, transcript);
-        const scoreKana = calculateScore(selectedItem.kana, transcript);
-        finalScore = Math.max(scoreTerm, scoreKana);
-        
-        if (lang === 'cn') {
-            if (finalScore === 100) feedbackText = `完美！"${transcript}"`;
-            else if (finalScore >= 80) feedbackText = `很好！聽到："${transcript}"`;
-            else if (finalScore >= 50) feedbackText = `接近了... 聽到："${transcript}"`;
-            else feedbackText = `没对上。听到："${transcript}"`;
-        } else {
-             if (finalScore === 100) feedbackText = `完美！"${transcript}"`;
-            else if (finalScore >= 80) feedbackText = `很好！聽到："${transcript}"`;
-            else if (finalScore >= 50) feedbackText = `差少少... 聽到："${transcript}"`;
-            else feedbackText = `唔係好岩。聽到："${transcript}"`;
-        }
-    }
-    
-    const tip = getRandomFeedback(selectedItem.cat, finalScore);
-    setCoachTip(tip);
-    setFeedback(feedbackText);
-    setScore(finalScore);
-    setRecording(false);
-    
-    cancelAudioVisualization();
-  }, [selectedItem, fallbackMode, lang]);
-
-  useEffect(() => {
-    const Win = window as any;
-    const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition;
-
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'ja-JP';
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        finishRecording(transcript);
-      };
-      
-      recognition.onerror = (event: any) => {
-         if (recording) {
-             console.log("Speech Error:", event.error);
-             if (event.error === 'network') {
-                 setFeedback(lang === 'cn' ? "网络不通，切换至离线音量模式..." : "網絡不通，切換至離線音量模式...");
-                 setFallbackMode(true);
-                 return;
-             }
-             setRecording(false);
-             setScore(0);
-             cancelAudioVisualization();
-
-             if (event.error === 'no-speech') {
-                 setFeedback(lang === 'cn' ? "未检测到声音" : "未檢測到聲音");
-             } else if (event.error === 'not-allowed') {
-                 setFeedback(lang === 'cn' ? "麦克风权限被拒绝" : "麥克風權限被拒絕");
-             } else {
-                 setFeedback(lang === 'cn' ? ("识别错误: " + event.error) : ("識別錯誤: " + event.error));
-             }
-         }
-      };
-      recognitionRef.current = recognition;
-    }
-  }, [recording, finishRecording, lang]);
-
-  const stopRecording = () => {
-    if (recognitionRef.current) try { recognitionRef.current.stop(); } catch(e) {}
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    cancelAudioVisualization();
-    setRecording(false);
   };
 
   const handleVisualClose = useCallback(() => {
-    stopRecording();
     window.speechSynthesis.cancel();
     setIsDetailClosing(true);
     setTimeout(() => {
         setSelectedItem(null);
         setIsDetailClosing(false);
     }, 300);
-  }, [selectedItem, recording]);
+  }, []);
 
   useEffect(() => {
     const onPopState = (event: PopStateEvent) => {
@@ -651,11 +484,7 @@ export default function App() {
   const openDetail = (item: VocabItem) => {
     window.history.pushState({ itemId: item.id }, "", "");
     setSelectedItem(item);
-    setScore(null);
-    setFeedback("");
-    setCoachTip(null);
     setIsDetailClosing(false); 
-    stopRecording();
   };
 
   const closeDetail = () => {
@@ -679,72 +508,41 @@ export default function App() {
         }
         const line = cleanLines[index];
         const u = new SpeechSynthesisUtterance(line.content);
+        utteranceRef.current = u; 
+        
         u.lang = 'ja-JP';
-        if (voices.length > 0) {
-            if (voices.length >= 2) {
-                 u.voice = line.isB ? voices[1] : voices[0];
-            } else {
-                 u.voice = voices[0];
-            }
+        
+        let selectedVoice = availableVoices[selectedGender] || availableVoices.female || availableVoices.male;
+        
+        if (selectedVoice) {
+            u.voice = selectedVoice;
         }
-        if (voices.length < 2) {
-             u.pitch = line.isB ? 0.8 : 1.1; 
+        
+        if (cleanLines.length > 1 && line.isB) {
+             if (selectedGender === 'female' && availableVoices.male) {
+                 u.voice = availableVoices.male;
+             } else if (selectedGender === 'male' && availableVoices.female) {
+                 u.voice = availableVoices.female;
+             } else {
+                 u.pitch = 0.8;
+             }
+        } else {
+             u.pitch = 1.0;
         }
-        u.rate = 0.9; 
+
+        u.rate = playbackSpeed; 
         u.onend = () => {
             index++;
             playNext();
         };
         u.onerror = (e) => {
+            console.warn("TTS Error:", e);
             setPlayingId(null);
         };
         window.speechSynthesis.speak(u);
     };
     window.speechSynthesis.cancel();
     playNext();
-  };
-
-  const handleRecord = () => {
-    if (!selectedItem) return;
-    if (recording) {
-      stopRecording();
-      return;
-    }
-    const Win = window as any;
-    const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        alert(lang === 'cn' ? "您的浏览器不支持语音识别" : "您的瀏覽器不支持語音識別");
-        return;
-    }
-    setRecording(true);
-    setScore(null);
-    setCoachTip(null);
-    startAudioVisualization();
-    if (fallbackMode) {
-        setFeedback(lang === 'cn' ? "请大声朗读... (离线模式)" : "請大聲朗讀... (離線模式)");
-        return;
-    }
-    setFeedback(lang === 'cn' ? "请大声朗读..." : "請大聲朗讀...");
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = window.setTimeout(() => {
-        if (recording && !fallbackMode) { 
-             setFeedback(lang === 'cn' ? "超时: 未检测到语音" : "超時: 未檢測到語音");
-             setScore(0);
-             setRecording(false);
-             if (recognitionRef.current) try { recognitionRef.current.stop(); } catch(e){}
-             cancelAudioVisualization();
-        }
-    }, 6000); 
-    try {
-      recognitionRef.current.start();
-    } catch (e: any) {
-      console.error("Mic Start Error:", e);
-      if (e.name !== 'InvalidStateError') {
-          setRecording(false);
-          setFeedback(lang === 'cn' ? "启动失败" : "啟動失敗");
-          cancelAudioVisualization();
-      }
-    }
   };
 
   const renderChatBubbles = (exampleText: string) => {
@@ -795,7 +593,7 @@ export default function App() {
 
   return (
     <div 
-        className={`min-h-screen font-sans selection:bg-fuchsia-900 selection:text-white flex flex-col relative transition-colors duration-500 text-white ${currentTheme.bgClass}`}
+        className={`min-h-screen font-sans selection:bg-fuchsia-900 selection:text-white flex flex-col relative transition-colors duration-500 text-white overflow-x-hidden ${currentTheme.bgClass} ${lang === 'cn' ? 'font-noto-sc' : 'font-noto-tc'}`}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -804,14 +602,16 @@ export default function App() {
           {currentTheme.bgOverlay}
       </div>
 
-      <div className="fixed top-0 left-0 right-0 z-30 border-b border-white/10 bg-[#0a0a0c]/85 backdrop-blur-xl overflow-hidden shadow-2xl transition-all duration-300">
-        <div className="absolute inset-0 flex transform -skew-x-12 scale-125 -ml-8 pointer-events-none opacity-90 select-none">
-            <div className="flex-1 bg-gradient-to-br from-fuchsia-900 via-purple-900 to-indigo-950 border-r border-white/5"></div>
-            <div className="flex-1 bg-gradient-to-br from-[#ff4655] to-[#bd3944] border-r border-white/10 relative"></div>
-            <div className="flex-1 bg-gradient-to-br from-[#8e0e0e] to-[#5e1c1c] border-r border-white/10 relative"></div>
-            <div className="flex-1 bg-gradient-to-br from-[#f99e1a] to-[#b36b0e] relative"></div>
+      <div className="fixed top-0 left-0 right-0 z-30 border-b border-white/10 bg-[#0a0a0c]/85 backdrop-blur-xl shadow-2xl transition-all duration-300">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute inset-0 flex transform -skew-x-12 scale-125 -ml-8 opacity-90 select-none">
+                <div className="flex-1 bg-gradient-to-br from-fuchsia-900 via-purple-900 to-indigo-950 border-r border-white/5"></div>
+                <div className="flex-1 bg-gradient-to-br from-[#ff4655] to-[#bd3944] border-r border-white/10 relative"></div>
+                <div className="flex-1 bg-gradient-to-br from-[#8e0e0e] to-[#5e1c1c] border-r border-white/10 relative"></div>
+                <div className="flex-1 bg-gradient-to-br from-[#f99e1a] to-[#b36b0e] relative"></div>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0a0a0c]/90 backdrop-blur-[2px]"></div>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0a0a0c]/90 pointer-events-none backdrop-blur-[2px]"></div>
 
         <div className="relative z-10 max-w-md mx-auto px-4 py-3 space-y-4">
           <div className="flex items-center justify-between">
@@ -822,25 +622,60 @@ export default function App() {
                 <h1 className="font-bold text-xl tracking-wide text-white drop-shadow-md">
                   JPGamer
                 </h1>
-                {!isOnline ? (
+                {!isOnline && (
                     <div className="flex items-center gap-1 px-2 py-0.5 bg-neutral-800/80 rounded-full border border-neutral-600 text-[10px] text-neutral-400">
                         <WifiOff className="w-3 h-3" />
                         <span>{uiText.offlineMode[lang]}</span>
                     </div>
-                ) : fallbackMode && (
-                    <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-900/40 rounded-full border border-amber-600/50 text-[10px] text-amber-200">
-                        <Activity className="w-3 h-3" />
-                        <span>{uiText.voiceOffline[lang]}</span>
-                    </div>
                 )}
              </div>
              <div className="flex items-center gap-2">
+                 
+                 {/* --- NEW Language Selector: Dynamic Pill Animation --- */}
+                 <div className="relative z-50 h-9 flex items-center justify-end">
+                     {showLangMenu && (
+                         <div 
+                             className="fixed inset-0 z-40 bg-black/5 backdrop-blur-[1px] animate-in fade-in duration-300"
+                             onClick={() => setShowLangMenu(false)}
+                         />
+                     )}
+                     
+                     <div 
+                        className={`relative z-50 h-9 flex items-center transition-all duration-500 ease-[cubic-bezier(0.32,0.725,0,1)] shadow-xl overflow-hidden border ${
+                            showLangMenu 
+                                ? 'w-[180px] bg-[#1a1a1c] border-white/20 rounded-full pl-1 pr-1' 
+                                : 'w-9 bg-transparent border-transparent rounded-lg'
+                        }`}
+                     >
+                        {/* Closed State: Globe Icon (Morphs out) */}
+                        <button
+                            onClick={() => setShowLangMenu(true)}
+                            className={`absolute left-0 top-0 w-9 h-9 flex flex-col items-center justify-center transition-all duration-300 ${
+                                showLangMenu ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100 text-neutral-400 hover:text-white'
+                            }`}
+                        >
+                            <Globe className="w-5 h-5" />
+                            <span className="text-[10px] font-bold mt-0.5 leading-none">{lang === 'cn' ? 'CN' : (lang === 'hk' ? 'HK' : 'TW')}</span>
+                        </button>
+
+                        {/* Open State: Options (Slide & Fade in) */}
+                        <div className={`flex items-center justify-between w-full h-full transition-all duration-500 ${showLangMenu ? 'opacity-100 translate-x-0 delay-75' : 'opacity-0 translate-x-4 pointer-events-none'}`}>
+                            <button onClick={() => selectLang('cn')} className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${lang === 'cn' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'}`}>CN</button>
+                            <div className="w-px h-3 bg-white/10"></div>
+                            <button onClick={() => selectLang('tw')} className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${lang === 'tw' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'}`}>TW</button>
+                            <div className="w-px h-3 bg-white/10"></div>
+                            <button onClick={() => selectLang('hk')} className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${lang === 'hk' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'}`}>HK</button>
+                        </div>
+                     </div>
+                 </div>
+                 {/* --- End Language Selector --- */}
+
                  <button
-                    onClick={toggleLang}
-                    className="flex flex-col items-center justify-center p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+                    onClick={toggleMaskMode}
+                    className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${isMaskMode ? 'bg-indigo-500/20 text-indigo-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
                  >
-                    <Globe className="w-5 h-5" />
-                    <span className="text-[10px] font-bold mt-0.5 leading-none">{lang === 'cn' ? '简' : '繁'}</span>
+                    {isMaskMode ? <EyeOff className="w-5 h-5 fill-current" /> : <Eye className="w-5 h-5" />}
+                    <span className="text-[10px] font-bold mt-0.5 leading-none">{isMaskMode ? 'Hide' : 'Show'}</span>
                  </button>
 
                  <button 
@@ -881,7 +716,7 @@ export default function App() {
             {CATEGORIES.map(cat => (
               <button
                 key={cat.id}
-                onClick={() => setActiveTab(cat.id)}
+                onClick={() => handleTabChange(cat.id)}
                 className={`pb-2 border-b-2 transition-all duration-300 flex flex-col items-center justify-center gap-1 ${
                   activeTab === cat.id 
                     ? `${cat.color.split(' ')[0]} font-bold border-current scale-105`
@@ -890,7 +725,7 @@ export default function App() {
               >
                 {activeTab === cat.id && <div className="mb-0.5">{cat.icon}</div>}
                 <span className={`text-[10px] leading-tight text-center truncate w-full ${cat.id === 'VALORANT' ? 'uppercase' : ''} ${cat.id === 'OW' ? 'italic' : ''}`}>
-                  {cat.id === 'LIFE' ? uiText.lifeCat[lang] : (lang === 'cn' ? cat.name : cat.name_tw)}
+                  {cat.id === 'LIFE' ? uiText.lifeCat[lang] : (lang === 'cn' ? cat.name : (lang === 'hk' ? (cat.name_hk || cat.name_tw) : cat.name_tw))}
                 </span>
               </button>
             ))}
@@ -899,7 +734,7 @@ export default function App() {
       </div>
 
       <main className="flex-1 max-w-md mx-auto w-full px-4 pt-52 pb-28 relative z-10">
-        <div key={activeTab + (showFavorites ? '-fav' : '') + lang} className="space-y-3 animate-enter">
+        <div key={activeTab + (showFavorites ? '-fav' : '') + lang} className={`space-y-3 ${animClass}`}>
           {filteredData.length > 0 ? (
             filteredData.map((item) => {
               const itemTheme = THEME_STYLES[item.cat] || THEME_STYLES['LIFE'];
@@ -916,7 +751,9 @@ export default function App() {
                 {activeTab === 'ALL' ? THEME_STYLES['ALL'].cardBgContent : currentTheme.cardBgContent}
                 
                 <div className={`flex-1 min-w-0 pr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
-                  <h3 className={`font-bold text-base text-white mb-1 truncate ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'italic' : ''}`}>{displayMeaning}</h3>
+                  <h3 className={`font-bold text-base text-white mb-1 truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'italic' : ''}`}>
+                      {displayMeaning}
+                  </h3>
                   <div className="flex items-center gap-2">
                       {activeTab === 'ALL' && (
                          <span className={`text-[9px] px-1.5 py-0.5 rounded border ${itemTheme.accentColorClass.replace('text-', 'border-').replace('font-bold', '')} opacity-70`}>
@@ -959,18 +796,26 @@ export default function App() {
                 <span className={`text-sm font-bold text-neutral-200/80 ${selectedItem.cat === 'VALORANT' ? 'uppercase tracking-widest' : ''}`}>
                     {lang === 'cn' 
                         ? CATEGORIES.find(c => c.id === selectedItem.cat)?.name 
-                        : CATEGORIES.find(c => c.id === selectedItem.cat)?.name_tw}
+                        : (lang === 'hk' ? (CATEGORIES.find(c => c.id === selectedItem.cat)?.name_hk || CATEGORIES.find(c => c.id === selectedItem.cat)?.name_tw) : CATEGORIES.find(c => c.id === selectedItem.cat)?.name_tw)}
                 </span>
                 
-                <button 
-                    onClick={(e) => toggleFavorite(e, selectedItem.id)}
-                    className={`p-2 -mr-2 rounded-full transition-colors ${favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-neutral-400'}`}
-                >
-                    <Star className={`w-6 h-6 ${favorites.includes(selectedItem.id) ? 'fill-current' : ''}`} />
-                </button>
+                <div className="flex items-center gap-1 -mr-2">
+                    <button 
+                        onClick={() => setShowSettings(true)}
+                        className="p-2 text-neutral-400 hover:text-white transition-colors rounded-full hover:bg-white/10"
+                    >
+                        <Settings2 className="w-6 h-6" />
+                    </button>
+                    <button 
+                        onClick={(e) => toggleFavorite(e, selectedItem.id)}
+                        className={`p-2 rounded-full transition-colors ${favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-neutral-400'}`}
+                    >
+                        <Star className={`w-6 h-6 ${favorites.includes(selectedItem.id) ? 'fill-current' : ''}`} />
+                    </button>
+                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain">
+            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-20">
                 <div className="px-6 pt-8 pb-6 text-center border-b border-white/5 relative">
                     <div className="absolute top-0 left-0 w-full h-[300px] z-0 overflow-hidden pointer-events-none">
                         <div className={`w-full h-full relative flex items-center justify-center overflow-hidden`}>
@@ -991,6 +836,7 @@ export default function App() {
                     <h1 className={`text-3xl font-black text-white mb-2 leading-tight drop-shadow-lg relative z-10 ${selectedItem.cat === 'OW' ? 'italic' : ''} ${selectedItem.cat === 'APEX' ? 'uppercase' : ''}`}>
                         {getLocalizedText(selectedItem, 'meaning')}
                     </h1>
+                    
                     <button 
                         onClick={() => handlePlay(selectedItem.term, 'term')}
                         className={`group/term relative z-10 inline-flex items-center justify-center gap-2 px-4 py-2 mt-1 mx-auto rounded-lg transition-all active:scale-95 hover:bg-white/5 cursor-pointer`}
@@ -1002,7 +848,8 @@ export default function App() {
                              {playingId === 'term' ? <Volume2 className="w-5 h-5 animate-pulse" /> : <Volume2 className="w-5 h-5" />}
                         </div>
                     </button>
-                    <p className="text-sm text-neutral-400 font-mono mt-1 relative z-10">
+                    
+                    <p className="text-sm text-neutral-400 font-mono mt-3 relative z-10">
                         {selectedItem.kana} · {selectedItem.romaji}
                     </p>
                     <div className={`mt-6 bg-black/40 p-4 border border-white/10 inline-block text-sm text-neutral-200 backdrop-blur-md shadow-xl relative z-10 ${selectedItem.cat === 'VALORANT' ? 'rounded-none border-l-4 border-l-rose-600' : selectedItem.cat === 'APEX' ? 'skew-x-[-6deg] border-r-4 border-r-red-600' : 'rounded-xl'}`}>
@@ -1020,7 +867,7 @@ export default function App() {
                         <div className="flex items-center gap-2">
                              <button 
                                 onClick={() => handlePlay(getLocalizedText(selectedItem, 'example'), 'ex')}
-                                className={`flex items-center gap-2 px-3 py-1.5 text-white transition-all active:scale-95 shadow-lg hover:brightness-110 ${detailTheme.buttonClass}`}
+                                className={`flex items-center gap-2 px-3 py-1.5 text-white transition-all active:scale-95 shadow-lg hover:brightness-110 relative z-20 ${detailTheme.buttonClass}`}
                             >
                                 {playingId === 'ex' ? <Volume2 className="w-3 h-3 animate-pulse" /> : <Play className="w-3 h-3" />}
                                 <span className={`text-[10px] font-bold not-italic ${selectedItem.cat === 'APEX' ? 'skew-x-[10deg] inline-block' : ''}`}>{uiText.play[lang]}</span>
@@ -1033,64 +880,56 @@ export default function App() {
                 </div>
             </div>
 
-            <div className="p-6 bg-black/60 backdrop-blur-xl border-t border-white/10 pb-8 relative z-20">
-                {recording && (
-                   <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden">
-                       <div className="h-full bg-green-500 transition-all duration-75 ease-out" style={{ width: `${(audioLevel / 255) * 100}%` }}></div>
-                   </div>
-                )}
-                
-                {score !== null && !recording && (
-                    <div className="mb-6 text-center animate-in fade-in slide-in-from-bottom-4">
-                        {score > 0 ? (
-                            <>
-                                <span className={`text-6xl font-black tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] ${score >= 80 ? 'text-green-400' : 'text-neutral-100'} ${selectedItem.cat === 'VALORANT' ? 'font-mono' : ''}`}>
-                                    {score}
-                                </span>
-                                <p className="text-white font-bold text-sm mt-1 mb-1">{feedback}</p>
-                            </>
-                        ) : (
-                            <div className="flex flex-col items-center gap-2 text-red-400 animate-in fade-in zoom-in duration-300">
-                                <AlertCircle className="w-8 h-8" />
-                                <span className="font-bold text-lg">{feedback || "识别失败"}</span>
+            {showSettings && (
+                <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end animate-in fade-in" onClick={() => setShowSettings(false)}>
+                    <div className="w-full bg-[#18181b] border-t border-white/10 rounded-t-2xl p-6 space-y-6 animate-in slide-in-from-bottom-10" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-bold text-white flex items-center gap-2">
+                                <Settings2 className="w-4 h-4 text-neutral-400" />
+                                Voice Settings
+                            </h3>
+                            <button onClick={() => setShowSettings(false)}><X className="w-5 h-5 text-neutral-400" /></button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Playback Speed</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[0.5, 0.75, 1.0].map(s => (
+                                    <button 
+                                        key={s}
+                                        onClick={() => setPlaybackSpeed(s)}
+                                        className={`py-2 rounded-lg text-sm font-bold transition-all ${playbackSpeed === s ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400'}`}
+                                    >
+                                        {s}x
+                                    </button>
+                                ))}
                             </div>
-                        )}
-                        {score > 0 && coachTip && (
-                            <div className="mt-3 min-h-[40px] flex justify-center">
-                                <div className={`bg-neutral-800/90 border border-white/10 p-3 text-xs text-neutral-300 max-w-[90%] mx-auto shadow-lg animate-in zoom-in ${selectedItem.cat === 'VALORANT' ? 'rounded-none border-l-rose-500 border-l-2' : 'rounded-lg'}`}>
-                                    <span className="font-bold mr-1 text-white flex items-center justify-center gap-1 mb-1">
-                                        <Trophy className="w-3 h-3 text-yellow-500" /> COACH:
-                                    </span>
-                                    {coachTip}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
+                        </div>
 
-                <button 
-                    onClick={handleRecord}
-                    className={`w-full py-4 flex items-center justify-center gap-2 font-bold text-lg transition-all active:scale-95 shadow-2xl text-white hover:brightness-110 ${
-                        recording 
-                        ? 'bg-neutral-800 text-red-500 border border-red-500/30'
-                        : detailTheme.buttonClass
-                    } ${selectedItem.cat === 'VALORANT' ? 'rounded-none' : ''}`}
-                >
-                    {recording ? (
-                        <>
-                            <StopCircle className="w-6 h-6 animate-pulse" />
-                            <span className={`not-italic ${selectedItem.cat === 'APEX' ? 'skew-x-[10deg]' : ''}`}>
-                                {fallbackMode ? uiText.detecting[lang] : uiText.listen[lang]}
-                            </span>
-                        </>
-                    ) : (
-                        <>
-                            <Mic className="w-6 h-6" />
-                            <span className={`not-italic ${selectedItem.cat === 'APEX' ? 'skew-x-[10deg]' : ''}`}>{uiText.challenge[lang]}</span>
-                        </>
-                    )}
-                </button>
-            </div>
+                        <div className="space-y-3">
+                             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Voice Tone / 声音</label>
+                             <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setSelectedGender('female')}
+                                    className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${selectedGender === 'female' ? 'bg-fuchsia-500/20 border-fuchsia-500 text-white' : 'bg-neutral-800 border-transparent text-neutral-400 hover:bg-neutral-700'}`}
+                                >
+                                    <div className="text-2xl mb-1">👧</div>
+                                    <span className="font-bold text-sm">Female</span>
+                                    <span className="text-[10px] opacity-50 truncate w-full text-center mt-1">{availableVoices.female?.name.split(' ')[0] || 'Default'}</span>
+                                </button>
+                                <button
+                                    onClick={() => setSelectedGender('male')}
+                                    className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${selectedGender === 'male' ? 'bg-blue-500/20 border-blue-500 text-white' : 'bg-neutral-800 border-transparent text-neutral-400 hover:bg-neutral-700'}`}
+                                >
+                                    <div className="text-2xl mb-1">👦</div>
+                                    <span className="font-bold text-sm">Male</span>
+                                    <span className="text-[10px] opacity-50 truncate w-full text-center mt-1">{availableVoices.male?.name.split(' ')[0] || 'Default'}</span>
+                                </button>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
           </div>
         </div>
       )}
@@ -1119,6 +958,14 @@ export default function App() {
           from { opacity: 0; transform: scale(0.98) translateY(10px); }
           to { opacity: 1; transform: scale(1) translateY(0); }
         }
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInLeft {
+          from { opacity: 0; transform: translateX(-20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
         @keyframes slideUp {
           from { transform: translateY(100%); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
@@ -1134,6 +981,12 @@ export default function App() {
         .animate-enter {
           animation: fadeInScale 0.4s cubic-bezier(0.2, 0.0, 0.2, 1) forwards;
         }
+        .animate-slide-right {
+          animation: slideInRight 0.3s cubic-bezier(0.2, 0.0, 0.2, 1) forwards;
+        }
+        .animate-slide-left {
+          animation: slideInLeft 0.3s cubic-bezier(0.2, 0.0, 0.2, 1) forwards;
+        }
         .animate-overlay-enter {
           animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
@@ -1145,6 +998,11 @@ export default function App() {
         }
         .animate-slide-up {
           animation: slideUp 0.5s ease-out forwards;
+        }
+        .animate-in {
+            animation-duration: 0.2s;
+            animation-timing-function: ease-out;
+            animation-fill-mode: forwards;
         }
         .safe-pb {
           padding-bottom: env(safe-area-inset-bottom, 20px);
