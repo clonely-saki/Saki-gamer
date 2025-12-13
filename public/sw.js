@@ -1,4 +1,4 @@
-const CACHE_NAME = 'saki-comms-v1';
+const CACHE_NAME = 'saki-comms-v2';
 
 // Only cache the shell files during install.
 // Added PNGs to precache list assuming they will be generated.
