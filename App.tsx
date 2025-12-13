@@ -239,17 +239,6 @@ const THEME_STYLES: Record<string, {
 
 // --- Offline Icon/Image Logic ---
 
-// Get Category Background Image
-const getCategoryBg = (cat: string) => {
-    switch(cat) {
-        case 'VALORANT': return '/images/category-valorant.svg';
-        case 'APEX': return '/images/category-apex.svg';
-        case 'OW': return '/images/category-ow.svg';
-        case 'LIFE': return '/images/category-life.svg';
-        default: return '/images/category-life.svg';
-    }
-};
-
 // Get specific icon based on term/meaning keywords
 const getIconForTerm = (item: VocabItem) => {
     const text = (item.term + " " + item.meaning).toLowerCase();
@@ -984,8 +973,16 @@ export default function App() {
             <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain">
                 <div className="px-6 pt-8 pb-6 text-center border-b border-white/5 relative">
                     <div className="absolute top-0 left-0 w-full h-[300px] z-0 overflow-hidden pointer-events-none">
-                        <div className="w-full h-full bg-neutral-900 relative">
-                            <img src={getCategoryBg(selectedItem.cat)} alt="bg" className="w-full h-full object-cover opacity-60" />
+                        <div className={`w-full h-full relative flex items-center justify-center overflow-hidden`}>
+                            <div className={`absolute inset-0 opacity-20 transform scale-150 blur-xl ${
+                                 selectedItem.cat === 'VALORANT' ? 'bg-rose-900' :
+                                 selectedItem.cat === 'APEX' ? 'bg-red-900' :
+                                 selectedItem.cat === 'OW' ? 'bg-orange-900' :
+                                 'bg-fuchsia-900'
+                            }`}></div>
+                            <div className="transform scale-[8] opacity-10 text-white">
+                                {CATEGORIES.find(c => c.id === selectedItem.cat)?.icon}
+                            </div>
                         </div>
                         <div className={`absolute inset-0 bg-gradient-to-b from-transparent via-${detailTheme.bgClass.replace('bg-','')}/80 to-${detailTheme.bgClass.replace('bg-','')}`}></div>
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] to-transparent"></div>
