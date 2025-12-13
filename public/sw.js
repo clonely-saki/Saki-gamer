@@ -1,12 +1,13 @@
-const CACHE_NAME = 'jpgamer-offline-v6';
+const CACHE_NAME = 'jpgamer-offline-v7';
 
 // Only cache the shell files during install.
-// The app's JS/CSS chunks (hashed by Vite) will be cached dynamically upon first fetch.
 const URLS_TO_PRECACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon.svg'
+  // Cache the icons defined in manifest to support offline install prompts
+  'https://www.pwabuilder.com/assets/icons/icon_192.png',
+  'https://www.pwabuilder.com/assets/icons/icon_512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -14,7 +15,12 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('SW: Pre-caching shell');
-        return cache.addAll(URLS_TO_PRECACHE);
+        // Note: caching external resources in addAll might fail if CORS is not set on them.
+        // PWABuilder assets usually allow CORS, but if this fails, the SW install might fail.
+        // To be safe, we wrap it.
+        return cache.addAll(URLS_TO_PRECACHE).catch(err => {
+            console.warn('SW: Failed to cache some external assets', err);
+        });
       })
       .then(() => self.skipWaiting())
   );
@@ -37,14 +43,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // Strategy 1: HTML Navigation - Network First (to get updates), Fallback to Cache
+  // Strategy 1: HTML Navigation - Network First
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Check if valid response
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
@@ -61,13 +64,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy 2: Assets (JS, CSS, Images) - Stale-While-Revalidate
-  // This ensures assets are cached for offline, but update in background for next run
+  // Strategy 2: Assets - Stale-While-Revalidate
   event.respondWith(
     caches.match(event.request)
       .then((cachedResponse) => {
         const fetchPromise = fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          if (networkResponse && networkResponse.status === 200) {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(event.request, responseToCache);
@@ -75,7 +77,6 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         }).catch((err) => {
-            // Network failed, nothing to do (cached response will be returned if available)
             console.log('SW: Fetch failed for asset', err);
         });
 
