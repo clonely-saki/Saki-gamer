@@ -11,27 +11,27 @@
   "categories": ["education", "games", "entertainment"],
   "icons": [
     {
-      "src": "https://placehold.co/192x192/1e1b4b/22d3ee/png?text=G",
+      "src": "/icon.svg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "https://placehold.co/192x192/1e1b4b/22d3ee/png?text=G",
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "maskable"
     },
     {
-      "src": "https://placehold.co/512x512/1e1b4b/22d3ee/png?text=G",
+      "src": "/icon.svg",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "https://placehold.co/512x512/1e1b4b/22d3ee/png?text=G",
-      "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "maskable"
     }
   ],

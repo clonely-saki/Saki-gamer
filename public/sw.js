@@ -1,11 +1,12 @@
-const CACHE_NAME = 'jpgamer-offline-v5';
+const CACHE_NAME = 'jpgamer-offline-v6';
 
 // Only cache the shell files during install.
 // The app's JS/CSS chunks (hashed by Vite) will be cached dynamically upon first fetch.
 const URLS_TO_PRECACHE = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon.svg'
 ];
 
 self.addEventListener('install', (event) => {

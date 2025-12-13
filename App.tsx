@@ -3,7 +3,7 @@ import {
   Play, Mic, Search, X, Volume2, 
   StopCircle, ChevronLeft, MessageCircle, MoreHorizontal,
   Sword, Shield, Crosshair, Zap, Target, User, Bot, AlertCircle, Gamepad2, Download, Share,
-  Trophy
+  Trophy, WifiOff, Wifi
 } from 'lucide-react';
 import { CATEGORIES, VOCAB_DATA, VocabItem } from './constants';
 
@@ -248,6 +248,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('LIFE'); 
   const [selectedItem, setSelectedItem] = useState<VocabItem | null>(null); 
   const [searchTerm, setSearchTerm] = useState("");
+  const [isOnline, setIsOnline] = useState(true);
   
   // Audio state
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -273,6 +274,13 @@ export default function App() {
   const currentTheme = THEME_STYLES[activeTab] || THEME_STYLES['LIFE'];
 
   useEffect(() => {
+    // Online/Offline status
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     // Optimization for China/Offline: 
     // Prioritize 'localService' voices which are built-in and offline capable.
     // This avoids hitting Google servers if a network voice is default.
@@ -313,6 +321,8 @@ export default function App() {
     
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -376,8 +386,11 @@ export default function App() {
              setScore(0);
              if (event.error === 'no-speech') {
                  setFeedback("未检测到声音，请重试");
+             } else if (event.error === 'not-allowed') {
+                 alert("无法访问麦克风。请在系统设置或浏览器设置中允许此应用访问麦克风权限。\niOS用户请在设置-隐私-麦克风中检查。");
+                 setFeedback("权限被拒绝");
              } else {
-                 setFeedback("识别失败，请重试");
+                 setFeedback("识别失败: " + event.error);
              }
          }
       };
@@ -504,8 +517,11 @@ export default function App() {
       return;
     }
 
-    if (!recognitionRef.current) {
-        alert("您的浏览器不支持语音识别，请使用 Chrome 或 Edge");
+    const Win = window as any;
+    const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        alert("您的浏览器不支持语音识别，请使用 Chrome (Android) 或 Safari (iOS)");
         return;
     }
 
@@ -514,6 +530,7 @@ export default function App() {
     setScore(null);
     setCoachTip(null);
 
+    // Timeout logic: if no result in 5s
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = window.setTimeout(() => {
         if (recording) { 
@@ -526,10 +543,15 @@ export default function App() {
 
     try {
       recognitionRef.current.start();
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("Mic Error:", e);
       setRecording(false);
-      setFeedback("无法启动麦克风");
+      if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+          alert("无法访问麦克风。请检查浏览器权限设置。");
+          setFeedback("权限被拒绝");
+      } else {
+          setFeedback("启动失败");
+      }
     }
   };
 
@@ -626,6 +648,13 @@ export default function App() {
                 <h1 className="font-bold text-xl tracking-wide text-white drop-shadow-md">
                   JPGamer
                 </h1>
+                {/* Offline Indicator */}
+                {!isOnline && (
+                    <div className="flex items-center gap-1 px-2 py-0.5 bg-neutral-800/80 rounded-full border border-neutral-600 text-[10px] text-neutral-400">
+                        <WifiOff className="w-3 h-3" />
+                        <span>离线模式</span>
+                    </div>
+                )}
              </div>
              <div className="flex items-center gap-2">
                  {deferredPrompt && (
@@ -644,7 +673,7 @@ export default function App() {
             <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-white transition-colors`} />
             <input 
               type="text" 
-              placeholder="搜索..." 
+              placeholder={isOnline ? "搜索..." : "离线搜索..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`w-full bg-white/5 border border-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder-neutral-500 focus:outline-none focus:bg-white/10 focus:border-white/20 transition-all backdrop-blur-sm ${activeTab === 'VALORANT' ? 'rounded-none' : 'rounded-xl'} ${activeTab === 'APEX' ? 'skew-x-[-10deg]' : ''}`}
