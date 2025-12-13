@@ -3,13 +3,12 @@ import {
   Play, Mic, Search, X, Volume2, 
   StopCircle, ChevronLeft, MessageCircle, MoreHorizontal,
   Sword, Shield, Crosshair, Zap, Target, User, Bot, AlertCircle, Gamepad2, Download, Share,
-  Trophy, WifiOff, Activity, Star, Layers, Globe
+  Trophy, WifiOff, Activity, Star, Layers, Globe, ImageIcon, Sparkles,
+  Battery, Syringe, Box, Skull, Flame, Hexagon, Heart, Eye, Hand, Footprints, Clock, Coins, Speaker, Settings
 } from 'lucide-react';
 import { CATEGORIES, VOCAB_DATA, VocabItem } from './constants';
 
 // --- Local Feedback Database ---
-// Note: While specific to simplified in source, we can map basic feedback or leave as is.
-// For a better experience, we will add a simple converter helper for feedback text or use mapped values if we expanded this DB.
 const FEEDBACK_DB: Record<string, { perfect: string[], good: string[], ok: string[], bad: string[] }> = {
   VALORANT: {
     perfect: ["ACE! 完璧な発音だ！(ACE! 完美的发音！)", "クラッチ！その調子だ。(关键局拿下！保持这状态。)", "エイム神ってるね！(瞄准太神了！)"],
@@ -136,7 +135,7 @@ const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
   );
 };
 
-// --- Theme Configurations with Richer Backgrounds ---
+// --- Theme Configurations ---
 const THEME_STYLES: Record<string, { 
     bgClass: string,
     bgOverlay: React.ReactNode,
@@ -160,7 +159,7 @@ const THEME_STYLES: Record<string, {
     ),
     accentColorClass: "text-white font-bold",
     buttonClass: "bg-white text-black rounded-xl font-bold hover:bg-neutral-200 transition-all",
-    detailBgClass: "bg-[#050505]" // Fallback, though item-specific detail theme should usually take precedence
+    detailBgClass: "bg-[#050505]"
   },
   LIFE: {
     bgClass: "bg-[#0a0a0c]",
@@ -238,14 +237,83 @@ const THEME_STYLES: Record<string, {
   }
 };
 
+// --- Offline Icon/Image Logic ---
+
+// Get Category Background Image
+const getCategoryBg = (cat: string) => {
+    switch(cat) {
+        case 'VALORANT': return '/images/category-valorant.svg';
+        case 'APEX': return '/images/category-apex.svg';
+        case 'OW': return '/images/category-ow.svg';
+        case 'LIFE': return '/images/category-life.svg';
+        default: return '/images/category-life.svg';
+    }
+};
+
+// Get specific icon based on term/meaning keywords
+const getIconForTerm = (item: VocabItem) => {
+    const text = (item.term + " " + item.meaning).toLowerCase();
+    
+    if (text.includes('battery') || text.includes('cell') || text.includes('charge')) return <Battery />;
+    if (text.includes('heal') || text.includes('health') || text.includes('med')) return <Syringe />;
+    if (text.includes('shield') || text.includes('armor') || text.includes('protect')) return <Shield />;
+    if (text.includes('gun') || text.includes('shoot') || text.includes('aim') || text.includes('recoil')) return <Crosshair />;
+    if (text.includes('ult') || text.includes('ability') || text.includes('skill')) return <Zap />;
+    if (text.includes('kill') || text.includes('dead') || text.includes('death')) return <Skull />;
+    if (text.includes('box') || text.includes('loot')) return <Box />;
+    if (text.includes('fire') || text.includes('burn')) return <Flame />;
+    if (text.includes('point') || text.includes('site') || text.includes('zone')) return <Hexagon />;
+    if (text.includes('love') || text.includes('like') || text.includes('dating')) return <Heart />;
+    if (text.includes('look') || text.includes('see') || text.includes('watch')) return <Eye />;
+    if (text.includes('hand') || text.includes('touch')) return <Hand />;
+    if (text.includes('run') || text.includes('walk') || text.includes('move')) return <Footprints />;
+    if (text.includes('time') || text.includes('wait') || text.includes('later')) return <Clock />;
+    if (text.includes('money') || text.includes('buy') || text.includes('pay')) return <Coins />;
+    if (text.includes('voice') || text.includes('say') || text.includes('speak')) return <Speaker />;
+    
+    // Default icons by category
+    if (item.cat === 'VALORANT') return <Sword />;
+    if (item.cat === 'APEX') return <Target />;
+    if (item.cat === 'OW') return <Gamepad2 />;
+    return <Sparkles />;
+};
+
+// Component to render the "thumbnail" using icons
+const VocabThumbnail = ({ item }: { item: VocabItem }) => {
+    const icon = getIconForTerm(item);
+    
+    // Style base on category
+    let bgClass = "bg-neutral-800";
+    let iconColor = "text-white";
+    
+    if (item.cat === 'VALORANT') {
+        bgClass = "bg-rose-900/30 border border-rose-500/30";
+        iconColor = "text-rose-400";
+    } else if (item.cat === 'APEX') {
+        bgClass = "bg-red-900/30 border border-red-500/30 skew-x-[-6deg]";
+        iconColor = "text-red-400 skew-x-[6deg]";
+    } else if (item.cat === 'OW') {
+        bgClass = "bg-orange-900/30 border border-orange-500/30";
+        iconColor = "text-orange-400";
+    } else {
+        bgClass = "bg-fuchsia-900/30 border border-fuchsia-500/30";
+        iconColor = "text-fuchsia-400";
+    }
+
+    return (
+        <div className={`w-full h-full flex items-center justify-center ${bgClass} shadow-inner`}>
+            {React.cloneElement(icon as React.ReactElement<any>, { className: `w-8 h-8 ${iconColor}` })}
+        </div>
+    );
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('ALL'); 
   const [selectedItem, setSelectedItem] = useState<VocabItem | null>(null); 
   const [searchTerm, setSearchTerm] = useState("");
   const [isOnline, setIsOnline] = useState(true);
-  const [lang, setLang] = useState<'cn' | 'tw'>('cn'); // Language state: 'cn' (Simplified) or 'tw' (Traditional)
+  const [lang, setLang] = useState<'cn' | 'tw'>('cn'); 
   
-  // Favorites
   const [favorites, setFavorites] = useState<string[]>(() => {
       try {
           const saved = localStorage.getItem('jpgamer_favorites');
@@ -272,21 +340,18 @@ export default function App() {
     setLang(prev => prev === 'cn' ? 'tw' : 'cn');
   };
 
-  // Helper to get localized string from item
   const getLocalizedText = useCallback((item: VocabItem, field: 'meaning' | 'desc' | 'example') => {
       if (lang === 'cn') return item[field];
-      // Return TW version if exists, otherwise fallback to CN
       if (field === 'meaning') return item.meaning_tw || item.meaning;
       if (field === 'desc') return item.desc_tw || item.desc;
       if (field === 'example') return item.example_tw || item.example;
       return item[field];
   }, [lang]);
 
-  // UI Text Localization
   const uiText = {
       searchPlaceholder: {
-          cn: showFavorites ? "搜索收藏..." : (isOnline ? "搜索..." : "离线搜索..."),
-          tw: showFavorites ? "搜尋收藏..." : (isOnline ? "搜尋..." : "離線搜尋..."),
+          cn: showFavorites ? "搜索收藏..." : "搜索...",
+          tw: showFavorites ? "搜尋收藏..." : "搜尋...",
       },
       offlineMode: { cn: "离线模式", tw: "離線模式" },
       voiceOffline: { cn: "语音离线包", tw: "語音離線包" },
@@ -308,54 +373,41 @@ export default function App() {
       }
   };
 
-  // Audio state
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [score, setScore] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const [coachTip, setCoachTip] = useState<string | null>(null);
   
-  // Audio Visualization & Offline Fallback State
   const [audioLevel, setAudioLevel] = useState(0);
-  const [fallbackMode, setFallbackMode] = useState(false); // True if Google services fail
+  const [fallbackMode, setFallbackMode] = useState(false); 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  // Animation states
   const [isDetailClosing, setIsDetailClosing] = useState(false);
   
-  // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
-  // Touch/Swipe State
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const minSwipeDistance = 50;
 
-  // Refs
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<number | null>(null); 
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
-  // Get current theme config for main list view
   const currentTheme = THEME_STYLES[activeTab] || THEME_STYLES['LIFE'];
-
-  // Get detail view theme based on item category
   const detailTheme = selectedItem ? (THEME_STYLES[selectedItem.cat] || THEME_STYLES['LIFE']) : currentTheme;
 
   const filteredData = useMemo(() => {
     return VOCAB_DATA.filter((item) => {
-      // If ALL is selected, show everything. Otherwise, filter by category.
       const matchesCategory = activeTab === 'ALL' ? true : item.cat === activeTab;
-      
-      // Search logic needs to check both CN and TW meanings to be helpful
       const lowerSearch = searchTerm.toLowerCase();
       const currentMeaning = getLocalizedText(item, 'meaning');
-      
       const matchesSearch = 
         !searchTerm ||
         item.term.toLowerCase().includes(lowerSearch) || 
@@ -364,7 +416,6 @@ export default function App() {
         item.romaji.toLowerCase().includes(lowerSearch);
       
       const matchesFavorite = showFavorites ? favorites.includes(item.id) : true;
-
       return matchesCategory && matchesSearch && matchesFavorite;
     });
   }, [activeTab, searchTerm, showFavorites, favorites, lang, getLocalizedText]);
@@ -420,7 +471,6 @@ export default function App() {
     });
   };
 
-  // --- Touch Event Handlers for Swiping ---
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
@@ -432,8 +482,6 @@ export default function App() {
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
-    // Disable swipe if a detail item is currently open (to prevent conflicts or weird UX)
     if (selectedItem) return;
 
     const distance = touchStart - touchEnd;
@@ -445,18 +493,15 @@ export default function App() {
         if (currentIndex === -1) return;
 
         if (isLeftSwipe) {
-            // Next Tab
             const nextIndex = (currentIndex + 1) % CATEGORIES.length;
             setActiveTab(CATEGORIES[nextIndex].id);
         } else {
-            // Previous Tab
             const prevIndex = (currentIndex - 1 + CATEGORIES.length) % CATEGORIES.length;
             setActiveTab(CATEGORIES[prevIndex].id);
         }
     }
   };
 
-  // --- Audio Visualization Logic (System Mic Access Proof) ---
   const startAudioVisualization = async () => {
     try {
       if (!audioContextRef.current) {
@@ -479,31 +524,23 @@ export default function App() {
       const update = () => {
         if (!analyserRef.current) return;
         analyserRef.current.getByteFrequencyData(dataArray);
-        
-        // Calculate average volume
         let sum = 0;
         for (let i = 0; i < bufferLength; i++) {
             sum += dataArray[i];
         }
         const avg = sum / bufferLength;
-        setAudioLevel(avg); // 0 to 255
+        setAudioLevel(avg); 
         
-        // --- Fallback Logic: Simple Volume Detection ---
-        // If we are in fallback mode, we assume loud noise = success
         if (fallbackMode && recording && avg > 50) {
-             // Artificial "success" if user speaks loudly
-             // We use a small timeout to simulate processing
-             if (!timeoutRef.current) { // Ensure we don't trigger multiple times
+             if (!timeoutRef.current) {
                  timeoutRef.current = window.setTimeout(() => {
                      finishRecording(selectedItem?.term || "...");
                  }, 800);
              }
         }
-
         animationFrameRef.current = requestAnimationFrame(update);
       };
       update();
-
     } catch (err) {
       console.error("Visualizer Error:", err);
     }
@@ -522,17 +559,13 @@ export default function App() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (!selectedItem) return;
     
-    // In Fallback Mode, we just give a "Good" or "Great" score randomly
-    // since we can't actually check pronunciation.
     let finalScore = 0;
     let feedbackText = "";
     
     if (fallbackMode) {
-        // Offline simulation
         finalScore = Math.random() > 0.5 ? 100 : 85; 
         feedbackText = lang === 'cn' ? "声音已检测 (离线模式)" : "聲音已檢測 (離線模式)";
     } else {
-        // Normal Speech Recognition Logic
         const scoreTerm = calculateScore(selectedItem.term, transcript);
         const scoreKana = calculateScore(selectedItem.kana, transcript);
         finalScore = Math.max(scoreTerm, scoreKana);
@@ -559,7 +592,6 @@ export default function App() {
     cancelAudioVisualization();
   }, [selectedItem, fallbackMode, lang]);
 
-  // --- Speech Recognition Setup ---
   useEffect(() => {
     const Win = window as any;
     const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition;
@@ -578,15 +610,11 @@ export default function App() {
       recognition.onerror = (event: any) => {
          if (recording) {
              console.log("Speech Error:", event.error);
-             
              if (event.error === 'network') {
-                 // CRITICAL FIX: Switch to Fallback Mode automatically
                  setFeedback(lang === 'cn' ? "网络不通，切换至离线音量模式..." : "網絡不通，切換至離線音量模式...");
                  setFallbackMode(true);
-                 // Don't stop recording, let the Visualizer logic handle "Success" via volume
                  return;
              }
-             
              setRecording(false);
              setScore(0);
              cancelAudioVisualization();
@@ -663,7 +691,6 @@ export default function App() {
         const line = cleanLines[index];
         const u = new SpeechSynthesisUtterance(line.content);
         u.lang = 'ja-JP';
-        
         if (voices.length > 0) {
             if (voices.length >= 2) {
                  u.voice = line.isB ? voices[1] : voices[0];
@@ -674,7 +701,6 @@ export default function App() {
         if (voices.length < 2) {
              u.pitch = line.isB ? 0.8 : 1.1; 
         }
-
         u.rate = 0.9; 
         u.onend = () => {
             index++;
@@ -695,31 +721,21 @@ export default function App() {
       stopRecording();
       return;
     }
-
     const Win = window as any;
     const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition;
-
     if (!SpeechRecognition) {
         alert(lang === 'cn' ? "您的浏览器不支持语音识别" : "您的瀏覽器不支持語音識別");
         return;
     }
-
     setRecording(true);
     setScore(null);
     setCoachTip(null);
-    
-    // Always start visualizer to prove system mic access
     startAudioVisualization();
-
-    // If we are already in fallback mode, don't try Google
     if (fallbackMode) {
         setFeedback(lang === 'cn' ? "请大声朗读... (离线模式)" : "請大聲朗讀... (離線模式)");
         return;
     }
-
     setFeedback(lang === 'cn' ? "请大声朗读..." : "請大聲朗讀...");
-    
-    // Safety timeout
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = window.setTimeout(() => {
         if (recording && !fallbackMode) { 
@@ -730,12 +746,10 @@ export default function App() {
              cancelAudioVisualization();
         }
     }, 6000); 
-
     try {
       recognitionRef.current.start();
     } catch (e: any) {
       console.error("Mic Start Error:", e);
-      // If start fails immediately, it might be permission or already running
       if (e.name !== 'InvalidStateError') {
           setRecording(false);
           setFeedback(lang === 'cn' ? "启动失败" : "啟動失敗");
@@ -819,7 +833,6 @@ export default function App() {
                 <h1 className="font-bold text-xl tracking-wide text-white drop-shadow-md">
                   JPGamer
                 </h1>
-                {/* Status Indicator */}
                 {!isOnline ? (
                     <div className="flex items-center gap-1 px-2 py-0.5 bg-neutral-800/80 rounded-full border border-neutral-600 text-[10px] text-neutral-400">
                         <WifiOff className="w-3 h-3" />
@@ -833,7 +846,14 @@ export default function App() {
                 )}
              </div>
              <div className="flex items-center gap-2">
-                 {/* Language Toggle */}
+                 {/* APK Setup Button */}
+                 {!isStandalone && (
+                     <a href="/pwa-builder.html" className="flex flex-col items-center justify-center p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-all">
+                        <Settings className="w-5 h-5" />
+                        <span className="text-[10px] font-bold mt-0.5 leading-none">APK Setup</span>
+                     </a>
+                 )}
+
                  <button
                     onClick={toggleLang}
                     className="flex flex-col items-center justify-center p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
@@ -842,7 +862,6 @@ export default function App() {
                     <span className="text-[10px] font-bold mt-0.5 leading-none">{lang === 'cn' ? '简' : '繁'}</span>
                  </button>
 
-                 {/* Favorites Toggle Button - UPDATED: Star Folder Style */}
                  <button 
                    onClick={() => setShowFavorites(!showFavorites)}
                    className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${showFavorites ? 'bg-yellow-500/20 text-yellow-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
@@ -877,7 +896,6 @@ export default function App() {
         </div>
         
         <div className="relative z-10 max-w-md mx-auto px-2 pb-0 mt-2 mb-2">
-          {/* UPDATED: grid-cols-5 for 5 tabs including 'ALL' */}
           <div className="grid grid-cols-5 gap-1 w-full">
             {CATEGORIES.map(cat => (
               <button
@@ -903,7 +921,6 @@ export default function App() {
         <div key={activeTab + (showFavorites ? '-fav' : '') + lang} className="space-y-3 animate-enter">
           {filteredData.length > 0 ? (
             filteredData.map((item) => {
-              // When in ALL mode, we want to know the item's specific category theme for small badges
               const itemTheme = THEME_STYLES[item.cat] || THEME_STYLES['LIFE'];
               const displayMeaning = getLocalizedText(item, 'meaning');
 
@@ -920,7 +937,6 @@ export default function App() {
                 <div className={`flex-1 min-w-0 pr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
                   <h3 className={`font-bold text-base text-white mb-1 truncate ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'italic' : ''}`}>{displayMeaning}</h3>
                   <div className="flex items-center gap-2">
-                      {/* Category Badge for ALL view */}
                       {activeTab === 'ALL' && (
                          <span className={`text-[9px] px-1.5 py-0.5 rounded border ${itemTheme.accentColorClass.replace('text-', 'border-').replace('font-bold', '')} opacity-70`}>
                              {item.cat === 'LIFE' ? uiText.lifeCat[lang] : item.cat}
@@ -934,7 +950,6 @@ export default function App() {
                       </p>
                   </div>
                 </div>
-                {/* Star Button in List - UPDATED: Yellow Star */}
                 <button
                     onClick={(e) => toggleFavorite(e, item.id)}
                     className="p-3 -mr-3 relative z-10 text-neutral-500 hover:text-yellow-400 transition-colors"
@@ -966,7 +981,6 @@ export default function App() {
                         : CATEGORIES.find(c => c.id === selectedItem.cat)?.name_tw}
                 </span>
                 
-                {/* Star Button in Detail View - UPDATED: Yellow Star */}
                 <button 
                     onClick={(e) => toggleFavorite(e, selectedItem.id)}
                     className={`p-2 -mr-2 rounded-full transition-colors ${favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-neutral-400'}`}
@@ -975,15 +989,22 @@ export default function App() {
                 </button>
             </div>
 
-            {/* Added !important to CSS to ensure this no-scrollbar works */}
             <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain">
                 <div className="px-6 pt-8 pb-6 text-center border-b border-white/5 relative">
-                    <h1 className={`text-3xl font-black text-white mb-2 leading-tight drop-shadow-lg ${selectedItem.cat === 'OW' ? 'italic' : ''} ${selectedItem.cat === 'APEX' ? 'uppercase' : ''}`}>
+                    <div className="absolute top-0 left-0 w-full h-[300px] z-0 overflow-hidden pointer-events-none">
+                        <div className="w-full h-full bg-neutral-900 relative">
+                            <img src={getCategoryBg(selectedItem.cat)} alt="bg" className="w-full h-full object-cover opacity-60" />
+                        </div>
+                        <div className={`absolute inset-0 bg-gradient-to-b from-transparent via-${detailTheme.bgClass.replace('bg-','')}/80 to-${detailTheme.bgClass.replace('bg-','')}`}></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] to-transparent"></div>
+                    </div>
+
+                    <h1 className={`text-3xl font-black text-white mb-2 leading-tight drop-shadow-lg relative z-10 ${selectedItem.cat === 'OW' ? 'italic' : ''} ${selectedItem.cat === 'APEX' ? 'uppercase' : ''}`}>
                         {getLocalizedText(selectedItem, 'meaning')}
                     </h1>
                     <button 
                         onClick={() => handlePlay(selectedItem.term, 'term')}
-                        className={`group/term relative inline-flex items-center justify-center gap-2 px-4 py-2 mt-1 mx-auto rounded-lg transition-all active:scale-95 hover:bg-white/5 cursor-pointer`}
+                        className={`group/term relative z-10 inline-flex items-center justify-center gap-2 px-4 py-2 mt-1 mx-auto rounded-lg transition-all active:scale-95 hover:bg-white/5 cursor-pointer`}
                     >
                         <p className={`text-2xl font-bold font-mono tracking-wide drop-shadow-md ${detailTheme.accentColorClass}`}>
                             {selectedItem.term}
@@ -992,10 +1013,10 @@ export default function App() {
                              {playingId === 'term' ? <Volume2 className="w-5 h-5 animate-pulse" /> : <Volume2 className="w-5 h-5" />}
                         </div>
                     </button>
-                    <p className="text-sm text-neutral-400 font-mono mt-1">
+                    <p className="text-sm text-neutral-400 font-mono mt-1 relative z-10">
                         {selectedItem.kana} · {selectedItem.romaji}
                     </p>
-                    <div className={`mt-6 bg-black/40 p-4 border border-white/10 inline-block text-sm text-neutral-200 backdrop-blur-md shadow-xl ${selectedItem.cat === 'VALORANT' ? 'rounded-none border-l-4 border-l-rose-600' : selectedItem.cat === 'APEX' ? 'skew-x-[-6deg] border-r-4 border-r-red-600' : 'rounded-xl'}`}>
+                    <div className={`mt-6 bg-black/40 p-4 border border-white/10 inline-block text-sm text-neutral-200 backdrop-blur-md shadow-xl relative z-10 ${selectedItem.cat === 'VALORANT' ? 'rounded-none border-l-4 border-l-rose-600' : selectedItem.cat === 'APEX' ? 'skew-x-[-6deg] border-r-4 border-r-red-600' : 'rounded-xl'}`}>
                         <span className={selectedItem.cat === 'APEX' ? 'skew-x-[6deg] block' : ''}>💡 {getLocalizedText(selectedItem, 'desc')}</span>
                     </div>
                 </div>
@@ -1024,7 +1045,6 @@ export default function App() {
             </div>
 
             <div className="p-6 bg-black/60 backdrop-blur-xl border-t border-white/10 pb-8 relative z-20">
-                {/* --- AUDIO VISUALIZER BAR --- */}
                 {recording && (
                    <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden">
                        <div className="h-full bg-green-500 transition-all duration-75 ease-out" style={{ width: `${(audioLevel / 255) * 100}%` }}></div>
