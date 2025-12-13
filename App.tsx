@@ -11,14 +11,22 @@ import { CATEGORIES, VOCAB_DATA, VocabItem } from './constants';
 
 // --- Audio Helper Functions ---
 
-// Simple retry fetch helper
-async function fetchWithRetry(url: string, retries = 1): Promise<Response> {
+// Robust retry fetch helper with delay
+async function fetchWithRetry(url: string, retries = 3, delay = 500): Promise<Response> {
   for (let i = 0; i <= retries; i++) {
     try {
       const res = await fetch(url);
       if (res.ok) return res;
+      
+      // If server error or rate limit, wait before retrying
+      if (i < retries) {
+        await new Promise(resolve => setTimeout(resolve, delay * (i + 1))); // Exponential-ish backoff
+      } else {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
     } catch (err) {
       if (i === retries) throw err;
+      await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
     }
   }
   throw new Error("Fetch failed after retries");
@@ -573,8 +581,10 @@ export default function App() {
               throw new Error("Audio Context not initialized");
           }
 
-          // Fetch all audio buffers concurrently
-          const bufferPromises = audioQueue.map(async (item) => {
+          // SEQUENTIAL Fetching to avoid API Rate Limits
+          const audioBuffers: AudioBuffer[] = [];
+          
+          for (const item of audioQueue) {
               const url = `https://api.tts.quest/v3/voicevox/synthesis?text=${encodeURIComponent(item.text)}&speaker=${item.speakerId}`;
               
               // Use fetchWithRetry helper
@@ -586,14 +596,11 @@ export default function App() {
               const audioRes = await fetchWithRetry(data.mp3StreamingUrl);
               const arrayBuffer = await audioRes.arrayBuffer();
               
-              // Only decode if context is alive
               if (audioContextRef.current) {
-                  return await audioContextRef.current.decodeAudioData(arrayBuffer);
+                  const buffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
+                  audioBuffers.push(buffer);
               }
-              throw new Error("Context lost");
-          });
-
-          const audioBuffers = await Promise.all(bufferPromises);
+          }
           
           setIsAiLoading(false);
 
