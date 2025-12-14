@@ -182,36 +182,6 @@ const THEME_STYLES: Record<string, {
   }
 };
 
-// --- Offline Icon/Image Logic ---
-
-// Get specific icon based on term/meaning keywords
-const getIconForTerm = (item: VocabItem) => {
-    const text = (item.term + " " + item.meaning).toLowerCase();
-    
-    if (text.includes('battery') || text.includes('cell') || text.includes('charge')) return <Battery />;
-    if (text.includes('heal') || text.includes('health') || text.includes('med')) return <Syringe />;
-    if (text.includes('shield') || text.includes('armor') || text.includes('protect')) return <Shield />;
-    if (text.includes('gun') || text.includes('shoot') || text.includes('aim') || text.includes('recoil')) return <Crosshair />;
-    if (text.includes('ult') || text.includes('ability') || text.includes('skill')) return <Zap />;
-    if (text.includes('kill') || text.includes('dead') || text.includes('death')) return <Skull />;
-    if (text.includes('box') || text.includes('loot')) return <Box />;
-    if (text.includes('fire') || text.includes('burn')) return <Flame />;
-    if (text.includes('point') || text.includes('site') || text.includes('zone')) return <Hexagon />;
-    if (text.includes('love') || text.includes('like') || text.includes('dating')) return <Heart />;
-    if (text.includes('look') || text.includes('see') || text.includes('watch')) return <Eye />;
-    if (text.includes('hand') || text.includes('touch')) return <Hand />;
-    if (text.includes('run') || text.includes('walk') || text.includes('move')) return <Footprints />;
-    if (text.includes('time') || text.includes('wait') || text.includes('later')) return <Clock />;
-    if (text.includes('money') || text.includes('buy') || text.includes('pay')) return <Coins />;
-    if (text.includes('voice') || text.includes('say') || text.includes('speak')) return <Speaker />;
-    
-    // Default icons by category
-    if (item.cat === 'VALORANT') return <Sword />;
-    if (item.cat === 'APEX') return <Target />;
-    if (item.cat === 'OW') return <Gamepad2 />;
-    return <Sparkles />;
-};
-
 export default function App() {
   const [activeTab, setActiveTab] = useState('ALL'); 
   const [selectedItem, setSelectedItem] = useState<VocabItem | null>(null); 
@@ -225,7 +195,6 @@ export default function App() {
   const [isMaskMode, setIsMaskMode] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [selectedGender, setSelectedGender] = useState<'female' | 'male'>('female');
-  // showSettings removed in favor of inline controls
   
   // Voice Engine State: Persist preference in localStorage, default to TRUE (VOICEVOX)
   const [useVoicevox, setUseVoicevox] = useState(() => {
@@ -328,9 +297,12 @@ export default function App() {
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
+  // Swipe logic
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null); // New: Track Y for slope check
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const minSwipeDistance = 50;
+  const [touchEndY, setTouchEndY] = useState<number | null>(null); // New: Track Y for slope check
+  const minSwipeDistance = 60; // Increased threshold slightly
 
   const currentTheme = THEME_STYLES[activeTab] || THEME_STYLES['LIFE'];
   const detailTheme = selectedItem ? (THEME_STYLES[selectedItem.cat] || THEME_STYLES['LIFE']) : currentTheme;
@@ -351,6 +323,40 @@ export default function App() {
       return matchesCategory && matchesSearch && matchesFavorite;
     });
   }, [activeTab, searchTerm, showFavorites, favorites, lang, getLocalizedText]);
+
+  // Audio "Warmup" for iOS
+  useEffect(() => {
+    const unlockAudio = () => {
+        if (!audioContextRef.current) {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            audioContextRef.current = new AudioContext();
+        }
+        
+        // Resume if suspended (common in iOS)
+        if (audioContextRef.current.state === 'suspended') {
+            audioContextRef.current.resume();
+        }
+
+        // Create a silent buffer and play it to "warm up" the audio engine
+        const buffer = audioContextRef.current.createBuffer(1, 1, 22050);
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContextRef.current.destination);
+        source.start(0);
+
+        // Remove listener after first interaction
+        window.removeEventListener('click', unlockAudio);
+        window.removeEventListener('touchstart', unlockAudio);
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+
+    return () => {
+        window.removeEventListener('click', unlockAudio);
+        window.removeEventListener('touchstart', unlockAudio);
+    };
+  }, []);
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -442,20 +448,30 @@ export default function App() {
 
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
+    setTouchEndY(null);
     setTouchStart(e.targetTouches[0].clientX);
+    setTouchStartY(e.targetTouches[0].clientY);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
+    setTouchEndY(e.targetTouches[0].clientY);
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart || !touchEnd || !touchStartY || !touchEndY) return;
     if (selectedItem) return;
 
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+    const distanceX = touchStart - touchEnd;
+    const distanceY = touchStartY - touchEndY;
+    
+    // Critical: Check slope. If vertical movement > horizontal movement, it's a scroll, not a swipe.
+    if (Math.abs(distanceY) > Math.abs(distanceX)) {
+        return; 
+    }
+
+    const isLeftSwipe = distanceX > minSwipeDistance;
+    const isRightSwipe = distanceX < -minSwipeDistance;
 
     if (isLeftSwipe || isRightSwipe) {
         const currentIndex = CATEGORIES.findIndex(c => c.id === activeTab);
@@ -476,8 +492,9 @@ export default function App() {
   const handleVisualClose = useCallback(() => {
     window.speechSynthesis.cancel();
     if (audioContextRef.current) {
-        audioContextRef.current.close().catch(() => {});
-        audioContextRef.current = null;
+        // Don't close context on visual close, keep it alive for re-use
+        // audioContextRef.current.close().catch(() => {});
+        // audioContextRef.current = null;
     }
     setIsDetailClosing(true);
     setTimeout(() => {
@@ -576,9 +593,13 @@ export default function App() {
       }
 
       try {
-          // Note: Context creation is handled in handlePlay to support iOS
+          // Check context state again before playing
           if (!audioContextRef.current) {
-              throw new Error("Audio Context not initialized");
+               const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+               audioContextRef.current = new AudioContext();
+          }
+          if (audioContextRef.current.state === 'suspended') {
+              await audioContextRef.current.resume();
           }
 
           // SEQUENTIAL Fetching to avoid API Rate Limits
@@ -705,7 +726,8 @@ export default function App() {
       
       // 2. Initialize or Resume AudioContext IMMEDIATELY on User Gesture (Critical for iOS)
       if (!audioContextRef.current) {
-          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+          audioContextRef.current = new AudioContext();
       }
       if (audioContextRef.current.state === 'suspended') {
           audioContextRef.current.resume().catch(e => console.error("Audio resume failed", e));
@@ -780,7 +802,7 @@ export default function App() {
           {currentTheme.bgOverlay}
       </div>
 
-      <div className="fixed top-0 left-0 right-0 z-30 border-b border-white/10 bg-[#0a0a0c]/85 backdrop-blur-xl shadow-2xl transition-all duration-300">
+      <div className="fixed top-0 left-0 right-0 z-30 border-b border-white/10 bg-[#0a0a0c]/85 backdrop-blur-xl shadow-2xl transition-all duration-300 pt-[env(safe-area-inset-top)]">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute inset-0 flex transform -skew-x-12 scale-125 -ml-8 opacity-90 select-none">
                 <div className="flex-1 bg-gradient-to-br from-fuchsia-900 via-purple-900 to-indigo-950 border-r border-white/5"></div>
@@ -912,7 +934,7 @@ export default function App() {
         </div>
       </div>
 
-      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-52 pb-40 relative z-10">
+      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-52 pb-40 relative z-10 safe-pt">
         <div key={activeTab + (showFavorites ? '-fav' : '') + lang} className={`space-y-3 ${animClass}`}>
           {filteredData.length > 0 ? (
             filteredData.map((item) => {
@@ -968,7 +990,7 @@ export default function App() {
           <div className={`w-full max-w-md flex flex-col h-[100dvh] pointer-events-auto shadow-2xl relative overflow-hidden ${detailTheme.detailBgClass} ${isDetailClosing ? 'animate-overlay-exit' : 'animate-overlay-enter'}`}>
             {detailTheme.bgOverlay}
             
-            <div className="px-4 py-4 flex items-center justify-between bg-black/40 backdrop-blur-md sticky top-0 z-50 border-b border-white/5">
+            <div className="px-4 py-4 flex items-center justify-between bg-black/40 backdrop-blur-md sticky top-0 z-50 border-b border-white/5 pt-[env(safe-area-inset-top,20px)]">
                 <button onClick={closeDetail} className="p-2 -ml-2 text-neutral-400 hover:text-white transition-colors rounded-full hover:bg-white/10">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
@@ -1057,7 +1079,7 @@ export default function App() {
             </div>
 
             {/* Permanent Bottom Voice Control Bar */}
-            <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0c]/90 backdrop-blur-md border-t border-white/10 z-50 safe-pb">
+            <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0c]/90 backdrop-blur-md border-t border-white/10 z-50 safe-pb pb-[env(safe-area-inset-bottom)]">
                  <div className="px-4 py-3 space-y-3">
                     
                     {/* Character Selection */}
@@ -1130,7 +1152,7 @@ export default function App() {
       )}
 
       {isIOS && !isStandalone && (
-        <div className="fixed bottom-0 left-0 right-0 bg-neutral-900/95 border-t border-white/10 p-4 z-50 backdrop-blur-md animate-slide-up shadow-2xl safe-pb">
+        <div className="fixed bottom-0 left-0 right-0 bg-neutral-900/95 border-t border-white/10 p-4 z-50 backdrop-blur-md animate-slide-up shadow-2xl safe-pb pb-[env(safe-area-inset-bottom)]">
            <div className="max-w-md mx-auto flex items-start gap-4">
               <div className="p-2 bg-neutral-800 rounded-lg">
                  <Share className="w-6 h-6 text-blue-400" /> 
@@ -1201,6 +1223,9 @@ export default function App() {
         }
         .safe-pb {
           padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        .safe-pt {
+            padding-top: calc(env(safe-area-inset-top, 20px) + 210px);
         }
       `}</style>
     </div>
