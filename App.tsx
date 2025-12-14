@@ -6,34 +6,28 @@ import {
   WifiOff, Star, Layers, Globe, Sparkles,
   Battery, Syringe, Box, Skull, Flame, Hexagon, Heart, Eye, Hand, Footprints, Clock, Coins, Speaker,
   EyeOff, Settings2, Check, Mic2, Radio, Loader2, Leaf, Music2, Cpu, Menu,
-  Languages, Type, Wifi, Signal
+  Languages, Type, Wifi, Signal, ChevronDown
 } from 'lucide-react';
 import { CATEGORIES, VOCAB_DATA, VocabItem } from './constants';
 
 // --- Audio Helper Functions ---
 
-async function fetchWithRetry(url: string, retries = 3, delay = 1000): Promise<Response> {
+async function fetchWithRetry(url: string, retries = 2, delay = 1000): Promise<Response> {
   for (let i = 0; i <= retries; i++) {
     try {
-      const res = await fetch(url);
+      // Explicitly set mode to cors to avoid some browser warnings, though most modern browsers handle this automatically
+      const res = await fetch(url, { mode: 'cors' });
       if (res.ok) return res;
       
       // Handle Rate Limiting (429)
       if (res.status === 429) {
           const retryHeader = res.headers.get('Retry-After');
-          let waitTime = 1000 * Math.pow(2, i + 1); // Default exponential backoff
-          
+          let waitTime = 1000 * Math.pow(2, i + 1); 
           if (retryHeader) {
              const seconds = parseInt(retryHeader);
-             if (!isNaN(seconds)) {
-                 waitTime = seconds * 1000;
-             }
+             if (!isNaN(seconds)) waitTime = seconds * 1000;
           }
-          
-          // Cap max wait time to 10s to avoid indefinite hangs
-          waitTime = Math.min(waitTime, 10000);
-
-          console.warn(`Rate limited (429). Retrying after ${waitTime}ms...`);
+          waitTime = Math.min(waitTime, 5000); // Cap at 5s
           await new Promise(resolve => setTimeout(resolve, waitTime));
           continue;
       }
@@ -41,6 +35,7 @@ async function fetchWithRetry(url: string, retries = 3, delay = 1000): Promise<R
       if (i < retries && res.status >= 500) {
         await new Promise(resolve => setTimeout(resolve, delay * (i + 1))); 
       } else {
+        // Don't throw immediately, let the caller handle the non-ok response
         throw new Error(`Request failed with status ${res.status}`);
       }
     } catch (err) {
@@ -266,7 +261,10 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(true);
   const [lang, setLang] = useState<'cn' | 'tw' | 'hk'>('cn'); 
   const [showLangMenu, setShowLangMenu] = useState(false);
-  const [animClass, setAnimClass] = useState('animate-enter');
+
+  // Splash Screen State
+  const [showSplash, setShowSplash] = useState(true);
+  const [isSplashFading, setIsSplashFading] = useState(false);
 
   const [isMaskMode, setIsMaskMode] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
@@ -280,6 +278,20 @@ export default function App() {
           return true;
       }
   });
+
+  useEffect(() => {
+      // Phase 1: Show Splash, then start fading
+      const timer1 = setTimeout(() => {
+          setIsSplashFading(true);
+      }, 1800);
+
+      // Phase 2: Remove Splash from DOM
+      const timer2 = setTimeout(() => {
+          setShowSplash(false);
+      }, 2500); // 1.8s + 0.7s fade
+
+      return () => { clearTimeout(timer1); clearTimeout(timer2); };
+  }, []);
 
   const audioCacheRef = useRef<Map<string, Promise<AudioBuffer[]>>>(new Map());
 
@@ -378,32 +390,39 @@ export default function App() {
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
-  // Swipe logic
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchStartY, setTouchStartY] = useState<number | null>(null); 
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [touchEndY, setTouchEndY] = useState<number | null>(null); 
-  const minSwipeDistance = 80;
+  // Swipe logic State
+  const [swipeState, setSwipeState] = useState({
+    startX: 0,
+    currentX: 0,
+    startY: 0,
+    isDragging: false
+  });
 
+  const activeIndex = CATEGORIES.findIndex(c => c.id === activeTab);
   const currentTheme = THEME_STYLES[activeTab] || THEME_STYLES['LIFE'];
   const detailTheme = selectedItem ? (THEME_STYLES[selectedItem.cat] || THEME_STYLES['LIFE']) : currentTheme;
 
-  const filteredData = useMemo(() => {
-    return VOCAB_DATA.filter((item) => {
-      const matchesCategory = activeTab === 'ALL' ? true : item.cat === activeTab;
-      const lowerSearch = searchTerm.toLowerCase();
-      const currentMeaning = getLocalizedText(item, 'meaning');
-      const matchesSearch = 
-        !searchTerm ||
-        item.term.toLowerCase().includes(lowerSearch) || 
-        currentMeaning.toLowerCase().includes(lowerSearch) || 
-        item.kana.includes(lowerSearch) || 
-        item.romaji.toLowerCase().includes(lowerSearch);
-      
-      const matchesFavorite = showFavorites ? favorites.includes(item.id) : true;
-      return matchesCategory && matchesSearch && matchesFavorite;
+  // Prepare filtered data for ALL categories to render simultaneously
+  const allCategoriesData = useMemo(() => {
+    const data: Record<string, VocabItem[]> = {};
+    CATEGORIES.forEach(cat => {
+      data[cat.id] = VOCAB_DATA.filter((item) => {
+        const matchesCategory = cat.id === 'ALL' ? true : item.cat === cat.id;
+        const lowerSearch = searchTerm.toLowerCase();
+        const currentMeaning = getLocalizedText(item, 'meaning');
+        const matchesSearch = 
+          !searchTerm ||
+          item.term.toLowerCase().includes(lowerSearch) || 
+          currentMeaning.toLowerCase().includes(lowerSearch) || 
+          item.kana.includes(lowerSearch) || 
+          item.romaji.toLowerCase().includes(lowerSearch);
+        
+        const matchesFavorite = showFavorites ? favorites.includes(item.id) : true;
+        return matchesCategory && matchesSearch && matchesFavorite;
+      });
     });
-  }, [activeTab, searchTerm, showFavorites, favorites, lang, getLocalizedText]);
+    return data;
+  }, [searchTerm, showFavorites, favorites, lang, getLocalizedText]);
 
   const activeCategoryName = useMemo(() => {
     const cat = CATEGORIES.find(c => c.id === activeTab);
@@ -514,66 +533,55 @@ export default function App() {
 
   const handleTabChange = (newTabId: string) => {
     if (newTabId === activeTab) return;
-    
-    const oldIndex = CATEGORIES.findIndex(c => c.id === activeTab);
-    const newIndex = CATEGORIES.findIndex(c => c.id === newTabId);
-    
-    if (oldIndex !== -1 && newIndex !== -1) {
-        if (oldIndex === CATEGORIES.length - 1 && newIndex === 0) {
-            setAnimClass('animate-slide-right');
-        } else if (oldIndex === 0 && newIndex === CATEGORIES.length - 1) {
-            setAnimClass('animate-slide-left');
-        } else if (newIndex > oldIndex) {
-            setAnimClass('animate-slide-right');
-        } else {
-            setAnimClass('animate-slide-left');
-        }
-    } else {
-        setAnimClass('animate-enter');
-    }
-    
     setActiveTab(newTabId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Reset scroll for the new tab (optional, but good for navigation feeling)
+    const el = document.getElementById(`scroll-container-${newTabId}`);
+    if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchEndY(null);
-    setTouchStart(e.targetTouches[0].clientX);
-    setTouchStartY(e.targetTouches[0].clientY);
+    if (selectedItem) return;
+    setSwipeState({
+        startX: e.touches[0].clientX,
+        currentX: e.touches[0].clientX,
+        startY: e.touches[0].clientY,
+        isDragging: true
+    });
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-    setTouchEndY(e.targetTouches[0].clientY);
+    if (!swipeState.isDragging || selectedItem) return;
+    const x = e.touches[0].clientX;
+    const y = e.touches[0].clientY;
+    
+    // Determine scroll direction lock
+    const dx = Math.abs(x - swipeState.startX);
+    const dy = Math.abs(y - swipeState.startY);
+
+    // If vertical movement dominates, assume scrolling and ignore horizontal swipe
+    if (dy > dx) return;
+
+    setSwipeState(prev => ({ ...prev, currentX: x }));
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd || !touchStartY || !touchEndY) return;
-    if (selectedItem) return;
-
-    const distanceX = touchStart - touchEnd;
-    const distanceY = touchStartY - touchEndY;
+    if (!swipeState.isDragging || selectedItem) return;
     
-    if (Math.abs(distanceY) > Math.abs(distanceX) * 0.5) {
-        return; 
-    }
-
-    const isLeftSwipe = distanceX > minSwipeDistance;
-    const isRightSwipe = distanceX < -minSwipeDistance;
-
-    if (isLeftSwipe || isRightSwipe) {
-        const currentIndex = CATEGORIES.findIndex(c => c.id === activeTab);
-        if (currentIndex === -1) return;
-
-        if (isLeftSwipe) {
-            const nextIndex = (currentIndex + 1) % CATEGORIES.length;
-            handleTabChange(CATEGORIES[nextIndex].id);
-        } else {
-            const prevIndex = (currentIndex - 1 + CATEGORIES.length) % CATEGORIES.length;
-            handleTabChange(CATEGORIES[prevIndex].id);
+    const diff = swipeState.currentX - swipeState.startX;
+    const threshold = window.innerWidth * 0.2; // 20% width to trigger switch
+    
+    // Only switch if dragging horizontally (check implicitly via startX/currentX difference)
+    if (Math.abs(diff) > threshold) {
+        if (diff > 0 && activeIndex > 0) {
+            // Swipe Right -> Prev
+            handleTabChange(CATEGORIES[activeIndex - 1].id);
+        } else if (diff < 0 && activeIndex < CATEGORIES.length - 1) {
+            // Swipe Left -> Next
+            handleTabChange(CATEGORIES[activeIndex + 1].id);
         }
     }
+    
+    setSwipeState(prev => ({ ...prev, isDragging: false, startX: 0, currentX: 0 }));
   };
 
   const handleVisualClose = useCallback(() => {
@@ -618,6 +626,8 @@ export default function App() {
   };
 
   const loadAudioBuffers = useCallback(async (text: string, char: string): Promise<AudioBuffer[]> => {
+    if (!text || text.trim() === '') return [];
+    
     const cacheKey = `${char}:${text}`;
     if (audioCacheRef.current.has(cacheKey)) {
         return audioCacheRef.current.get(cacheKey)!;
@@ -671,10 +681,12 @@ export default function App() {
                     }
                  }
             } catch (e) {
-                 console.error("Audio segment load failed", e);
+                 console.warn("Audio segment load failed, skipping segment", e);
+                 // Don't throw here to allow partial success or fallback
             }
         }
         
+        if (buffers.length === 0) throw new Error("No buffers loaded");
         return buffers;
     })();
 
@@ -704,7 +716,8 @@ export default function App() {
           setIsAiLoading(false); 
           
           if (!buffers || buffers.length === 0) {
-              setPlayingId(null);
+              // Silently fall back to browser TTS if buffers are empty
+              handleBrowserPlay(text, id);
               return;
           }
 
@@ -727,7 +740,7 @@ export default function App() {
           });
 
       } catch (error) {
-          console.error("VOICEVOX Error:", error);
+          console.warn("VOICEVOX Failed (network or api error), falling back to Browser TTS:", error);
           handleBrowserPlay(text, id);
       } finally {
           if (isAiLoading) setIsAiLoading(false);
@@ -816,8 +829,10 @@ export default function App() {
          const termText = selectedItem.kana || selectedItem.term;
          const exText = getLocalizedText(selectedItem, 'example');
          
-         loadAudioBuffers(termText, selectedCharacter).catch(e => console.debug('Preload term failed', e));
-         loadAudioBuffers(exText, selectedCharacter).catch(e => console.debug('Preload example failed', e));
+         loadAudioBuffers(termText, selectedCharacter).catch(e => {
+             // Silence preload errors to avoid console spam
+         });
+         loadAudioBuffers(exText, selectedCharacter).catch(e => {});
     }
   }, [selectedItem, useVoicevox, isOnline, selectedCharacter, loadAudioBuffers, getLocalizedText]);
 
@@ -894,10 +909,32 @@ export default function App() {
   return (
     <div 
         className={`h-[100dvh] selection:bg-fuchsia-900 selection:text-white flex flex-col relative transition-colors duration-500 text-zinc-100 overflow-x-hidden ${currentTheme.bgClass}`}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
     >
+      {/* --- SPLASH SCREEN (OPTION C) --- */}
+      {showSplash && (
+        <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505] transition-opacity duration-700 ease-out pointer-events-none ${isSplashFading ? 'opacity-0' : 'opacity-100'}`}>
+             {/* Main Logo */}
+             <div className="relative mb-8">
+                {/* Glow Behind */}
+                <div className="absolute inset-0 bg-blue-600/20 rounded-full blur-[80px] animate-pulse"></div>
+                {/* Logo Image */}
+                <div className="w-24 h-24 rounded-full overflow-hidden border border-white/5 shadow-2xl relative z-10 animate-breathe grayscale brightness-125 contrast-125">
+                    <img src="/saiba.png" className="w-full h-full object-cover" />
+                </div>
+             </div>
+             
+             {/* Text Group */}
+             <div className="flex flex-col items-center gap-2 animate-fade-in-up z-10">
+                 <h1 className="text-4xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-zinc-100 to-zinc-500">SAKI</h1>
+                 <div className="flex items-center gap-3">
+                    <div className="h-[1px] w-8 bg-zinc-800"></div>
+                    <p className="text-[9px] text-zinc-500 font-mono tracking-[0.3em] uppercase">by Saki</p>
+                    <div className="h-[1px] w-8 bg-zinc-800"></div>
+                 </div>
+             </div>
+        </div>
+      )}
+
       <div key={activeTab} className="absolute inset-0 animate-fade-in duration-1000">
           {currentTheme.bgOverlay}
       </div>
@@ -905,42 +942,46 @@ export default function App() {
       {/* --- TOP FLOATING BAR --- */}
       <header className="fixed top-0 left-0 right-0 z-40 px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pointer-events-none">
          <div className="flex items-center justify-between pointer-events-auto max-w-md mx-auto">
-            {/* Logo Pill - Glass Effect */}
-            <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-full shadow-lg shadow-black/20">
-                <div className="w-6 h-6 rounded-full overflow-hidden border border-white/20">
+            {/* Logo Pill - Glass Effect (Unified rounded-2xl & bg-black/40) */}
+            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-2 rounded-2xl shadow-lg shadow-black/20">
+                <div className="w-6 h-6 rounded-lg overflow-hidden border border-white/20">
                    <img src="/saiba.png" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-bold text-sm tracking-wide text-zinc-100/90">Saki</span>
                 {!isOnline && <WifiOff className="w-3 h-3 text-red-400 ml-1" />}
             </div>
 
-            {/* Action Buttons - Unified Glass Style */}
+            {/* Action Buttons - Unified Glass Style (Rounded-xl & bg-black/40) */}
             <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setShowLangMenu(!showLangMenu)}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-lg ${showLangMenu ? 'bg-zinc-100 text-black border-white' : 'bg-white/5 text-zinc-100 border-white/10 hover:bg-white/10 active:scale-95'}`}
-                >
-                    <span className="text-[10px] font-bold">{lang.toUpperCase()}</span>
-                </button>
-                {showLangMenu && (
-                    <div className="absolute top-[calc(env(safe-area-inset-top)+3.8rem)] right-16 z-50 bg-[#1a1a1c]/90 backdrop-blur-xl border border-white/10 rounded-xl p-1 shadow-2xl flex flex-col gap-1 min-w-[80px] animate-in slide-in-from-top-2 fade-in">
-                        {(['cn', 'tw', 'hk'] as const).map(l => (
-                             <button key={l} onClick={() => selectLang(l)} className={`px-3 py-2 text-xs font-bold rounded-lg text-left transition-colors ${lang === l ? 'bg-white/10 text-zinc-100' : 'text-zinc-400 hover:text-zinc-100'}`}>
-                                 {l.toUpperCase()}
-                             </button>
-                        ))}
-                    </div>
-                )}
+                {/* REFACTORED LANGUAGE SELECTOR */}
+                <div className="relative">
+                    <button 
+                      onClick={() => setShowLangMenu(!showLangMenu)}
+                      className={`h-10 px-3 flex items-center justify-between gap-2 rounded-xl backdrop-blur-xl border transition-all duration-300 shadow-lg min-w-[70px] ${showLangMenu ? 'bg-zinc-100 text-black border-white' : 'bg-black/40 text-zinc-100 border-white/10 hover:bg-black/60 active:scale-95'}`}
+                    >
+                        <span className="text-[10px] font-bold">{lang.toUpperCase()}</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${showLangMenu ? 'rotate-180' : ''}`} />
+                    </button>
+                    {showLangMenu && (
+                        <div className="absolute top-full mt-2 left-0 w-full z-50 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-1 shadow-2xl flex flex-col gap-1 origin-top animate-elastic-drop overflow-hidden">
+                            {(['cn', 'tw', 'hk'] as const).map(l => (
+                                 <button key={l} onClick={() => selectLang(l)} className={`w-full py-2 text-[10px] font-bold rounded-lg text-center transition-colors ${lang === l ? 'bg-white/10 text-zinc-100' : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'}`}>
+                                     {l.toUpperCase()}
+                                 </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
                 
                 <button 
                   onClick={toggleMaskMode}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-lg ${isMaskMode ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-white/5 text-zinc-100 border-white/10 hover:bg-white/10 active:scale-95'}`}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-lg ${isMaskMode ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-black/40 text-zinc-100 border-white/10 hover:bg-black/60 active:scale-95'}`}
                 >
                     {isMaskMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
 
                 {deferredPrompt && (
-                   <button onClick={handleInstallClick} className="w-10 h-10 rounded-full flex items-center justify-center bg-zinc-100 text-black shadow-lg active:scale-95 animate-pulse">
+                   <button onClick={handleInstallClick} className="w-10 h-10 rounded-xl flex items-center justify-center bg-zinc-100 text-black shadow-lg active:scale-95 animate-pulse">
                       <Download className="w-4 h-4" />
                    </button>
                 )}
@@ -948,66 +989,93 @@ export default function App() {
          </div>
       </header>
 
-      {/* --- MAIN SCROLLABLE CONTENT --- */}
-      <main className="flex-1 w-full max-w-md mx-auto px-4 pb-[240px] pt-[calc(env(safe-area-inset-top)+6rem)] overflow-y-auto no-scrollbar">
-        {/* Category Title Header */}
-        <div className="mb-6 mt-4 pl-2">
-            <h2 className="text-[18px] font-semibold text-zinc-50 inline-block relative pb-1">
-                {showFavorites ? uiText.favorite[lang] : activeCategoryName}
-                <div className={`absolute bottom-0 left-0 right-0 h-[1px] ${currentTheme.underlineColor}`}></div>
-            </h2>
-        </div>
+      {/* --- MAIN CAROUSEL CONTENT --- */}
+      <main 
+        className="flex-1 w-full max-w-md mx-auto relative overflow-hidden"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={{ touchAction: 'pan-y' }} // Let browser handle vertical scroll, we handle swipe
+      >
+        <div 
+           className="flex h-full transition-transform"
+           style={{
+               width: `${CATEGORIES.length * 100}%`,
+               transform: `translateX(calc(-${activeIndex * (100 / CATEGORIES.length)}% + ${swipeState.isDragging ? (swipeState.currentX - swipeState.startX) : 0}px))`,
+               transition: swipeState.isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)'
+           }}
+        >
+          {CATEGORIES.map(cat => {
+             const items = allCategoriesData[cat.id];
+             // Resolve theme for this specific column. 'ALL' has special logic, others rely on ID or default to LIFE
+             const catTheme = cat.id === 'ALL' ? THEME_STYLES['ALL'] : (THEME_STYLES[cat.id] || THEME_STYLES['LIFE']);
+             const catName = lang === 'cn' ? cat.name : (lang === 'hk' ? (cat.name_hk || cat.name_tw) : cat.name_tw);
 
-        <div key={activeTab + (showFavorites ? '-fav' : '') + lang} className={`space-y-3 ${animClass}`}>
-          {filteredData.length > 0 ? (
-            filteredData.map((item) => {
-              const displayMeaning = getLocalizedText(item, 'meaning');
+             return (
+               <div 
+                 key={cat.id} 
+                 id={`scroll-container-${cat.id}`}
+                 className="h-full w-full overflow-y-auto no-scrollbar px-4 pb-[240px] pt-[calc(env(safe-area-inset-top)+6rem)]"
+                 style={{ width: `${100 / CATEGORIES.length}%` }}
+               >
+                 {/* Category Title Header - Moves with slide */}
+                 <div className="mb-6 mt-4 pl-2">
+                     <h2 className="text-[18px] font-semibold text-zinc-50 inline-block relative pb-1">
+                         {showFavorites ? uiText.favorite[lang] : catName}
+                         <div className={`absolute bottom-0 left-0 right-0 h-[1px] ${catTheme.underlineColor}`}></div>
+                     </h2>
+                 </div>
 
-              return (
-              <div 
-                key={item.id} 
-                onClick={() => openDetail(item)}
-                className={`group py-4 px-4 flex items-center justify-between cursor-pointer ${
-                    activeTab === 'ALL' ? THEME_STYLES['ALL'].cardClass : currentTheme.cardClass
-                }`}
-              >
-                {/* Background Animation Layer */}
-                {activeTab === 'ALL' ? THEME_STYLES['ALL'].cardBgContent : currentTheme.cardBgContent}
-                
-                {/* Left: Glass Icon Decoration - UNIFIED for all cards */}
-                <div className={`mr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
-                    <GlassListIcon cat={item.cat} />
-                </div>
+                 {/* List */}
+                 <div className="space-y-3">
+                   {items.length > 0 ? (
+                     items.map((item) => {
+                       const displayMeaning = getLocalizedText(item, 'meaning');
+                       return (
+                       <div 
+                         key={item.id} 
+                         onClick={() => openDetail(item)}
+                         className={`group py-4 px-4 flex items-center justify-between cursor-pointer ${
+                            cat.id === 'ALL' ? THEME_STYLES['ALL'].cardClass : catTheme.cardClass
+                         }`}
+                       >
+                         {/* Background Animation Layer */}
+                         {cat.id === 'ALL' ? THEME_STYLES['ALL'].cardBgContent : catTheme.cardBgContent}
+                         
+                         {/* Left: Glass Icon Decoration */}
+                         <div className={`mr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
+                             <GlassListIcon cat={item.cat} />
+                         </div>
 
-                {/* Center: Content */}
-                <div className={`flex-1 min-w-0 pr-2 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
-                  {/* Main Text: 16px, 500, Soft White (Zinc-100), Relaxed Line Height */}
-                  <h3 className={`font-medium text-[16px] text-zinc-100 leading-relaxed mb-0.5 truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'not-italic' : ''}`}>
-                      {displayMeaning}
-                  </h3>
-                  
-                  {/* Sub Text: 14px, 400, Cool Grey (Slate-400) */}
-                  <p className={`text-[14px] font-normal text-slate-400 truncate font-mono flex items-center gap-2 group-hover:text-zinc-200 transition-colors`}>
-                    <span>{item.term}</span>
-                    {/* Simplified List View: Just Kana if different */}
-                    {item.kana !== item.term && <span className="opacity-70 border-l border-neutral-600 pl-2 group-hover:text-neutral-300">{item.kana}</span>}
-                  </p>
-                </div>
+                         {/* Center: Content */}
+                         <div className={`flex-1 min-w-0 pr-2 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
+                           <h3 className={`font-medium text-[16px] text-zinc-100 leading-relaxed mb-0.5 truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'not-italic' : ''}`}>
+                               {displayMeaning}
+                           </h3>
+                           <p className={`text-[14px] font-normal text-slate-400 truncate font-mono flex items-center gap-2 group-hover:text-zinc-200 transition-colors`}>
+                             <span>{item.term}</span>
+                             {item.kana !== item.term && <span className="opacity-70 border-l border-neutral-600 pl-2 group-hover:text-neutral-300">{item.kana}</span>}
+                           </p>
+                         </div>
 
-                {/* Right: Favorite Button */}
-                <button
-                    onClick={(e) => toggleFavorite(e, item.id)}
-                    className={`p-2 relative z-10 text-neutral-600 hover:text-yellow-400 transition-colors ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}
-                >
-                    <Star className={`w-5 h-5 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-                </button>
-              </div>
-            )})
-          ) : (
-             <div className="text-center py-20 opacity-30 text-sm text-neutral-500">
-               <p>{showFavorites ? uiText.noFavs[lang] : uiText.noResults[lang]}</p>
-             </div>
-          )}
+                         {/* Right: Favorite Button */}
+                         <button
+                             onClick={(e) => toggleFavorite(e, item.id)}
+                             className={`p-2 relative z-10 text-neutral-600 hover:text-yellow-400 transition-colors ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}
+                         >
+                             <Star className={`w-5 h-5 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                         </button>
+                       </div>
+                     )})
+                   ) : (
+                      <div className="text-center py-20 opacity-30 text-sm text-neutral-500">
+                        <p>{showFavorites ? uiText.noFavs[lang] : uiText.noResults[lang]}</p>
+                      </div>
+                   )}
+                 </div>
+               </div>
+             );
+          })}
         </div>
       </main>
 
@@ -1015,8 +1083,8 @@ export default function App() {
       <div className="fixed bottom-0 left-0 right-0 z-40 p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pointer-events-none">
          <div className="max-w-md mx-auto flex flex-col gap-3 pointer-events-auto">
              
-             {/* 1. Floating Search Bar (Stacked Above Tabs) */}
-             <div className={`relative bg-zinc-900/80 rounded-2xl border border-white/10 flex items-center px-4 h-12 transition-all focus-within:border-white/30 focus-within:shadow-[0_0_25px_-5px_rgba(255,255,255,0.15)] backdrop-blur-xl shadow-lg shadow-black/50 overflow-hidden group`}>
+             {/* 1. Floating Search Bar (Stacked Above Tabs) - Unified BG & Radius */}
+             <div className={`relative bg-black/40 rounded-2xl border border-white/10 flex items-center px-4 h-12 transition-all focus-within:border-white/30 focus-within:shadow-[0_0_25px_-5px_rgba(255,255,255,0.15)] backdrop-blur-xl shadow-lg shadow-black/50 overflow-hidden group`}>
                 {/* Tech Accent Line */}
                 <div className={`absolute top-0 left-0 bottom-0 w-1 ${
                     activeTab === 'VALORANT' ? 'bg-[#ff4655]' : 
@@ -1053,8 +1121,8 @@ export default function App() {
                 </div>
              </div>
 
-             {/* 2. Category Tabs (The Dock) */}
-             <div className={`backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden p-3 transition-all duration-500 bg-black/40 ${
+             {/* 2. Category Tabs (The Dock) - Unified BG & Radius (rounded-2xl) */}
+             <div className={`backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-3 transition-all duration-500 bg-black/40 ${
                  activeTab === 'VALORANT' ? 'shadow-rose-900/20 border-rose-500/10' : 
                  activeTab === 'APEX' ? 'shadow-red-900/20 border-red-500/10' :
                  activeTab === 'OW' ? 'shadow-orange-900/20 border-orange-500/10' :
@@ -1069,7 +1137,7 @@ export default function App() {
                             activeTab === cat.id ? 'opacity-100 scale-110' : 'opacity-50 hover:opacity-80 scale-100'
                         }`}
                       >
-                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${
+                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all border ${
                              activeTab === cat.id 
                                 ? `bg-white/10 border-white/20 shadow-lg backdrop-blur-md` 
                                 : 'bg-transparent border-transparent group-hover:bg-white/5'
@@ -1099,7 +1167,7 @@ export default function App() {
             <div className="fixed top-0 left-0 right-0 p-4 pt-[calc(env(safe-area-inset-top)+1rem)] flex justify-between z-50 pointer-events-none max-w-md mx-auto">
                 <button
                     onClick={closeDetail}
-                    className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xl border border-white/10 text-zinc-100 shadow-xl active:scale-95 transition-all hover:bg-black/60"
+                    className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 text-zinc-100 shadow-xl active:scale-95 transition-all hover:bg-black/60"
                 >
                     <ChevronLeft className="w-6 h-6 -ml-0.5" />
                 </button>
@@ -1107,7 +1175,7 @@ export default function App() {
                 <div className="flex gap-2">
                     <button 
                         onClick={(e) => toggleFavorite(e, selectedItem.id)}
-                        className={`pointer-events-auto w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl active:scale-95 transition-all hover:bg-black/60 ${favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-neutral-200'}`}
+                        className={`pointer-events-auto w-12 h-12 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl active:scale-95 transition-all hover:bg-black/60 ${favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-neutral-200'}`}
                     >
                         <Star className={`w-6 h-6 ${favorites.includes(selectedItem.id) ? 'fill-current' : ''}`} />
                     </button>
@@ -1306,6 +1374,21 @@ export default function App() {
           from { opacity: 0; }
           to { opacity: 1; }
         }
+        /* Custom Breathe Animation for Splash Screen */
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); filter: brightness(1); }
+          50% { transform: scale(1.05); filter: brightness(1.2); }
+        }
+        .animate-breathe {
+          animation: breathe 3s ease-in-out infinite;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 1s ease-out forwards;
+        }
         .animate-enter {
           animation: fadeInScale 0.4s cubic-bezier(0.2, 0.0, 0.2, 1) forwards;
         }
@@ -1337,6 +1420,14 @@ export default function App() {
             animation-duration: 0.2s;
             animation-timing-function: ease-out;
             animation-fill-mode: forwards;
+        }
+        @keyframes elasticDrop {
+            0% { opacity: 0; transform: scaleY(0.5); }
+            60% { transform: scaleY(1.1); }
+            100% { opacity: 1; transform: scaleY(1); }
+        }
+        .animate-elastic-drop {
+            animation: elasticDrop 0.4s cubic-bezier(0.3, 1.5, 0.5, 1) forwards;
         }
         .safe-pb {
           padding-bottom: env(safe-area-inset-bottom, 20px);
