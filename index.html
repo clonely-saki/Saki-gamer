@@ -3,25 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>JPGamer</title>
+    <title>Saki comms</title>
     
-    <link rel="manifest" href="/manifest.json" />
+    <!-- Add version query param to force browser to re-fetch manifest -->
+    <link rel="manifest" href="/manifest.json?v=2" />
     <meta name="theme-color" content="#0a0a0c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="JPGamer" />
+    <meta name="apple-mobile-web-app-title" content="Saki comms" />
     
-    <!-- Use local SVG icon instead of external URL -->
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Use standard PNG icons for wider compatibility if available, fallback to SVG -->
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
 
     <!-- Tailwind CDN. Note: For best performance in China, running 'npm install -D tailwindcss' 
          and building locally is recommended, but this CDN usually works acceptably. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+      :root {
+        --font-main: 'Inter', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
+        --font-tc: 'Inter', 'Noto Sans TC', 'Noto Sans JP', sans-serif;
+      }
       body {
         background-color: #000000;
-        color: #ffffff;
+        /* Updated from #ffffff to #e4e4e7 (Zinc 200) for softer contrast */
+        color: #e4e4e7;
+        font-family: var(--font-main);
         overscroll-behavior-y: none;
       }
       

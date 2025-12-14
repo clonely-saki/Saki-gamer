@@ -5,18 +5,40 @@ import {
   Sword, Shield, Crosshair, Zap, Target, User, Bot, AlertCircle, Gamepad2, Download, Share,
   WifiOff, Star, Layers, Globe, Sparkles,
   Battery, Syringe, Box, Skull, Flame, Hexagon, Heart, Eye, Hand, Footprints, Clock, Coins, Speaker,
-  EyeOff, Settings2, Check, Mic2, Radio, Loader2, Leaf, Music2, Cpu
+  EyeOff, Settings2, Check, Mic2, Radio, Loader2, Leaf, Music2, Cpu, Menu,
+  Languages, Type, Wifi, Signal
 } from 'lucide-react';
 import { CATEGORIES, VOCAB_DATA, VocabItem } from './constants';
 
 // --- Audio Helper Functions ---
 
-async function fetchWithRetry(url: string, retries = 3, delay = 500): Promise<Response> {
+async function fetchWithRetry(url: string, retries = 3, delay = 1000): Promise<Response> {
   for (let i = 0; i <= retries; i++) {
     try {
       const res = await fetch(url);
       if (res.ok) return res;
-      if (i < retries) {
+      
+      // Handle Rate Limiting (429)
+      if (res.status === 429) {
+          const retryHeader = res.headers.get('Retry-After');
+          let waitTime = 1000 * Math.pow(2, i + 1); // Default exponential backoff
+          
+          if (retryHeader) {
+             const seconds = parseInt(retryHeader);
+             if (!isNaN(seconds)) {
+                 waitTime = seconds * 1000;
+             }
+          }
+          
+          // Cap max wait time to 10s to avoid indefinite hangs
+          waitTime = Math.min(waitTime, 10000);
+
+          console.warn(`Rate limited (429). Retrying after ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+      }
+
+      if (i < retries && res.status >= 500) {
         await new Promise(resolve => setTimeout(resolve, delay * (i + 1))); 
       } else {
         throw new Error(`Request failed with status ${res.status}`);
@@ -63,9 +85,65 @@ const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
 
   return (
     <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md border border-white/20 ${isA ? 'bg-gradient-to-br from-cyan-400 to-blue-500' : 'bg-gradient-to-br from-fuchsia-500 to-pink-500'}`}>
-      {isA ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-white" />}
+      {isA ? <User className="w-5 h-5 text-zinc-100" /> : <Bot className="w-5 h-5 text-zinc-100" />}
     </div>
   );
+};
+
+// --- Unified Glass Icon Component ---
+const GlassListIcon = ({ cat }: { cat: string }) => {
+    let icon = <Layers className="w-5 h-5 text-zinc-100" />;
+    // Enhanced gradients for a "gem-like" look
+    let bgGradient = "from-slate-500/20 to-blue-600/20";
+    let glowColor = "shadow-blue-500/10";
+    let borderColor = "border-white/10";
+    let ringColor = "ring-blue-400/20";
+
+    switch(cat) {
+        case 'LIFE':
+            icon = <Sparkles className="w-5 h-5 text-fuchsia-200" />;
+            bgGradient = "from-fuchsia-500/20 to-purple-600/20";
+            glowColor = "shadow-fuchsia-500/20";
+            borderColor = "border-fuchsia-400/20";
+            ringColor = "ring-fuchsia-400/20";
+            break;
+        case 'VALORANT':
+            icon = <Zap className="w-5 h-5 text-rose-200" />;
+            bgGradient = "from-rose-500/20 to-red-600/20";
+            glowColor = "shadow-rose-500/20";
+            borderColor = "border-rose-400/20";
+            ringColor = "ring-rose-400/20";
+            break;
+        case 'APEX':
+            icon = <Target className="w-5 h-5 text-red-200" />;
+            bgGradient = "from-red-600/20 to-orange-700/20";
+            glowColor = "shadow-red-500/20";
+            borderColor = "border-red-400/20";
+            ringColor = "ring-red-400/20";
+            break;
+        case 'OW':
+            icon = <Gamepad2 className="w-5 h-5 text-orange-200" />;
+            bgGradient = "from-orange-500/20 to-amber-600/20";
+            glowColor = "shadow-orange-500/20";
+            borderColor = "border-orange-400/20";
+            ringColor = "ring-orange-400/20";
+            break;
+        default: // ALL
+            icon = <Layers className="w-5 h-5 text-blue-200" />;
+            bgGradient = "from-blue-500/20 to-indigo-600/20";
+            glowColor = "shadow-blue-500/20";
+            borderColor = "border-blue-400/20";
+            ringColor = "ring-blue-400/20";
+            break;
+    }
+
+    return (
+        <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${bgGradient} border ${borderColor} shadow-lg ${glowColor} backdrop-blur-md group-hover:scale-105 transition-transform duration-300 ring-1 ring-inset ${ringColor}`}>
+            {/* Inner gloss reflection */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-transparent opacity-50 pointer-events-none"></div>
+            {icon}
+        </div>
+    );
 };
 
 // --- Theme Configurations ---
@@ -76,40 +154,48 @@ const THEME_STYLES: Record<string, {
     cardBgContent: React.ReactNode,
     accentColorClass: string,
     buttonClass: string,
-    detailBgClass: string
+    detailBgClass: string,
+    underlineColor: string,
 }> = {
   ALL: {
     bgClass: "bg-[#050505]",
     bgOverlay: (
        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-         <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-900/20 via-[#101015] to-[#050505]"></div>
-         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.03)_0%,transparent_50%)]"></div>
+         {/* Cool Blue/Slate Ambient for ALL */}
+         <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-blue-950/40 via-[#0a0a0c] to-[#050505]"></div>
+         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
+         <div className="absolute top-[-200px] right-[-100px] w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px]"></div>
        </div>
     ),
-    cardClass: "rounded-xl border border-white/10 bg-[#18181b]/80 hover:bg-[#27272a] hover:border-white/20 transition-all shadow-sm relative overflow-hidden backdrop-blur-md",
+    // Added Inner Glow
+    cardClass: "rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.05)] backdrop-blur-md relative overflow-hidden group hover:border-white/10 hover:shadow-blue-500/5",
     cardBgContent: (
-      <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
     ),
-    accentColorClass: "text-white font-bold",
-    buttonClass: "bg-white text-black rounded-xl font-bold hover:bg-neutral-200 transition-all",
-    detailBgClass: "bg-[#050505]"
+    accentColorClass: "text-blue-400", 
+    buttonClass: "bg-zinc-100 text-black rounded-xl font-bold hover:bg-zinc-200 transition-all",
+    detailBgClass: "bg-[#050505]/95 backdrop-blur-3xl",
+    underlineColor: "border-blue-400"
   },
   LIFE: {
-    bgClass: "bg-[#0a0a0c]",
+    bgClass: "bg-[#050505]", 
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-fuchsia-900/40 via-[#1a1025] to-[#0a0a0c]"></div>
-        <div className="absolute bottom-0 right-0 w-[80%] h-[300px] bg-[radial-gradient(ellipse_at_bottom_right,rgba(79,70,229,0.1),transparent_70%)]"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
+        {/* Warm Fuchsia/Purple Ambient for LIFE - Distinct from ALL */}
+        <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-fuchsia-900/30 via-[#0a0a0c] to-[#050505]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
+        <div className="absolute bottom-0 right-0 w-[500px] h-[300px] bg-fuchsia-600/10 rounded-full blur-[100px]"></div>
       </div>
     ),
-    cardClass: "rounded-xl border-l-4 border-l-fuchsia-500 border-y border-r border-white/10 bg-[#18181b]/80 hover:bg-[#27272a] hover:border-l-fuchsia-400 transition-all shadow-sm relative overflow-hidden backdrop-blur-md",
+    // Added Inner Glow
+    cardClass: "rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.05)] backdrop-blur-md relative overflow-hidden group hover:border-white/10 hover:shadow-fuchsia-500/5",
     cardBgContent: (
-      <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
     ),
-    accentColorClass: "text-fuchsia-400 font-bold",
-    buttonClass: "bg-gradient-to-r from-fuchsia-600 to-indigo-600 rounded-xl font-bold shadow-[0_4px_20px_-5px_rgba(192,38,211,0.4)] hover:shadow-[0_4px_25px_-5px_rgba(192,38,211,0.6)] transition-all transform hover:-translate-y-0.5",
-    detailBgClass: "bg-[#0a0a0c]"
+    accentColorClass: "text-fuchsia-400",
+    buttonClass: "bg-gradient-to-r from-fuchsia-600 to-purple-600 rounded-xl font-bold shadow-lg shadow-fuchsia-900/20 hover:shadow-fuchsia-600/40 transition-all",
+    detailBgClass: "bg-[#0a0a0c]/95 backdrop-blur-3xl",
+    underlineColor: "border-fuchsia-500"
   },
   VALORANT: {
     bgClass: "bg-[#0f1923]",
@@ -121,16 +207,17 @@ const THEME_STYLES: Record<string, {
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,70,85,0.05)_1px,transparent_1px)] bg-[size:100px_100%] opacity-20"></div>
       </div>
     ),
-    cardClass: "rounded-none border-l-4 border-l-[#ff4655] border-y border-r border-white/10 bg-[#ece8e1]/5 hover:bg-[#ece8e1]/10 transition-all relative overflow-hidden group/card",
+    // Added Inner Glow
+    cardClass: "rounded-none border border-white/5 bg-[#ece8e1]/5 hover:bg-[#ece8e1]/10 transition-all relative overflow-hidden group/card shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] backdrop-blur-sm hover:border-[#ff4655]/30",
     cardBgContent: (
       <div className="absolute inset-0 pointer-events-none opacity-20 group-hover/card:opacity-30 transition-opacity">
          <div className="absolute top-0 right-0 w-20 h-full bg-[#ff4655]/20 skew-x-[-20deg]"></div>
-         <div className="absolute bottom-0 left-0 w-full h-[1px] bg-white/20"></div>
       </div>
     ),
     accentColorClass: "text-[#ff4655]",
     buttonClass: "bg-[#ff4655] rounded-none uppercase tracking-wider font-bold [clip-path:polygon(0_0,100%_0,100%_80%,92%_100%,0_100%)] hover:bg-[#ff5865]",
-    detailBgClass: "bg-[#0f1923]"
+    detailBgClass: "bg-[#0f1923]/95 backdrop-blur-3xl",
+    underlineColor: "border-[#ff4655]"
   },
   APEX: {
     bgClass: "bg-[#1a0b0b]",
@@ -139,16 +226,17 @@ const THEME_STYLES: Record<string, {
         <div className="absolute top-0 left-0 w-full h-[451px] bg-gradient-to-b from-[#da292a]/10 via-[#1a0b0b]/80 to-[#1a0b0b]"></div>
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(transparent_0%,#000_100%),repeating-linear-gradient(45deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_1px,transparent_1px,transparent_10px)]"></div>
         <div className="absolute top-0 right-0 w-[200px] h-full border-l border-red-500/10 skew-x-[-15deg]"></div>
-        <div className="absolute bottom-0 left-[-50px] w-[300px] h-[300px] bg-red-900/20 blur-[100px]"></div>
       </div>
     ),
-    cardClass: "skew-x-[-6deg] border-l-4 border-l-[#da292a] border-y border-r border-red-500/10 bg-gradient-to-br from-neutral-900/90 to-neutral-950/90 hover:border-l-[#ff4e4e] hover:from-red-900/20 backdrop-blur-sm transition-all relative overflow-hidden",
+    // Added Inner Glow
+    cardClass: "skew-x-[-6deg] border border-white/5 bg-gradient-to-br from-neutral-900/40 to-neutral-950/40 hover:from-red-900/20 backdrop-blur-md transition-all relative overflow-hidden shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] hover:border-red-500/30",
     cardBgContent: (
       <div className="absolute inset-0 pointer-events-none opacity-30 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#000_10px,#000_11px)]"></div>
     ),
     accentColorClass: "text-[#ff4e4e]",
     buttonClass: "bg-[#da292a] skew-x-[-10deg] border-b-4 border-[#8e0e0e] font-bold tracking-tighter uppercase hover:bg-[#f03a3b]",
-    detailBgClass: "bg-[#1a0b0b]"
+    detailBgClass: "bg-[#1a0b0b]/90 backdrop-blur-3xl",
+    underlineColor: "border-[#da292a]"
   },
   OW: {
     bgClass: "bg-[#181a20]",
@@ -159,13 +247,15 @@ const THEME_STYLES: Record<string, {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px] opacity-20"></div>
       </div>
     ),
-    cardClass: "rounded-xl border-l-4 border-l-[#f99e1a] border-y border-r border-white/10 bg-[#22252e] hover:bg-[#2b2f3a] transition-all shadow-sm relative overflow-hidden group",
+    // Added Inner Glow
+    cardClass: "rounded-2xl border border-white/5 bg-[#22252e]/60 hover:bg-[#2b2f3a]/80 transition-all shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] relative overflow-hidden group backdrop-blur-md hover:border-[#f99e1a]/30",
     cardBgContent: (
        <div className="absolute inset-0 bg-gradient-to-r from-[#f99e1a]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
     ),
     accentColorClass: "text-[#f99e1a] font-bold",
     buttonClass: "bg-[#f99e1a] hover:bg-[#ffaa33] text-[#16171d] rounded-xl font-bold shadow-[0_4px_15px_-5px_rgba(249,158,26,0.4)] transition-all transform hover:-translate-y-0.5",
-    detailBgClass: "bg-[#181a20]"
+    detailBgClass: "bg-[#181a20]/90 backdrop-blur-3xl",
+    underlineColor: "border-[#f99e1a]"
   }
 };
 
@@ -180,7 +270,7 @@ export default function App() {
 
   const [isMaskMode, setIsMaskMode] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
-  const [selectedGender, setSelectedGender] = useState<'female' | 'male'>('female');
+  const [selectedCharacter, setSelectedCharacter] = useState<'zundamon' | 'metan'>('zundamon');
   
   const [useVoicevox, setUseVoicevox] = useState(() => {
       try {
@@ -190,6 +280,8 @@ export default function App() {
           return true;
       }
   });
+
+  const audioCacheRef = useRef<Map<string, Promise<AudioBuffer[]>>>(new Map());
 
   useEffect(() => {
       localStorage.setItem('jpgamer_use_voicevox', JSON.stringify(useVoicevox));
@@ -253,7 +345,7 @@ export default function App() {
           tw: showFavorites ? "搜尋收藏..." : "搜尋...",
           hk: showFavorites ? "搜尋收藏..." : "搜尋...",
       },
-      offlineMode: { cn: "离线模式", tw: "離線模式", hk: "離線模式" },
+      offlineMode: { cn: "离线", tw: "離線", hk: "離線" },
       favorite: { cn: "收藏", tw: "收藏", hk: "收藏" },
       install: { cn: "安装", tw: "安裝", hk: "安裝" },
       lifeCat: { cn: "常用", tw: "常用", hk: "常用" },
@@ -262,12 +354,20 @@ export default function App() {
       lifeScene: { cn: "常用场景", tw: "常用場景", hk: "常用場景" },
       gameVoice: { cn: "游戏语音", tw: "遊戲語音", hk: "遊戲語音" },
       play: { cn: "播放", tw: "播放", hk: "播放" },
+      voiceMode: { 
+        offline: { cn: "离线发音", tw: "離線發音", hk: "離線發音" },
+        online: { cn: "在线发音", tw: "線上發音", hk: "線上發音" }
+      },
       iosTitle: { cn: "安装到 iPhone", tw: "安裝到 iPhone", hk: "安裝到 iPhone" },
       iosDesc: { 
-          cn: (<span>点击浏览器底部工具栏的 <span className="font-bold text-blue-400">分享</span> 按钮，然后向下滑动选择 <span className="font-bold text-white">"添加到主屏幕"</span> 即可獲得原生APP体验。</span>), 
-          tw: (<span>點擊瀏覽器底部工具欄的 <span className="font-bold text-blue-400">分享</span> 按鈕，然後向下滑動選擇 <span className="font-bold text-white">"加入主畫面"</span> 即可獲得原生APP體驗。</span>),
-          hk: (<span>點擊瀏覽器底部工具欄嘅 <span className="font-bold text-blue-400">分享</span> 按鈕，然後向下滑動選擇 <span className="font-bold text-white">"加入主畫面"</span> 即可獲得原生APP體驗。</span>) 
-      }
+          cn: (<span>点击浏览器底部工具栏的 <span className="font-bold text-blue-400">分享</span> 按钮，然后向下滑动选择 <span className="font-bold text-zinc-100">"添加到主屏幕"</span> 即可獲得原生APP体验。</span>), 
+          tw: (<span>點擊瀏覽器底部工具欄的 <span className="font-bold text-blue-400">分享</span> 按鈕，然後向下滑動選擇 <span className="font-bold text-zinc-100">"加入主畫面"</span> 即可獲得原生APP體驗。</span>),
+          hk: (<span>點擊瀏覽器底部工具欄嘅 <span className="font-bold text-blue-400">分享</span> 按鈕，然後向下滑動選擇 <span className="font-bold text-zinc-100">"加入主畫面"</span> 即可獲得原生APP體驗。</span>) 
+      },
+      description: { cn: "备注", tw: "備註", hk: "備註" },
+      example: { cn: "场景例句", tw: "場景例句", hk: "場景例句" },
+      zundamon: { cn: "尊达萌", tw: "尊達萌", hk: "尊達萌" },
+      metan: { cn: "四国梅坦", tw: "四國梅坦", hk: "四國梅坦" }
   };
 
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -305,6 +405,12 @@ export default function App() {
     });
   }, [activeTab, searchTerm, showFavorites, favorites, lang, getLocalizedText]);
 
+  const activeCategoryName = useMemo(() => {
+    const cat = CATEGORIES.find(c => c.id === activeTab);
+    if (!cat) return "";
+    return lang === 'cn' ? cat.name : (lang === 'hk' ? (cat.name_hk || cat.name_tw) : cat.name_tw);
+  }, [activeTab, lang]);
+
   useEffect(() => {
     const unlockAudio = () => {
         if (!audioContextRef.current) {
@@ -334,6 +440,12 @@ export default function App() {
         window.removeEventListener('touchstart', unlockAudio);
     };
   }, []);
+
+  useEffect(() => {
+    document.body.style.fontFamily = lang === 'cn' 
+      ? "'Inter', 'Noto Sans SC', 'Noto Sans JP', sans-serif" 
+      : "'Inter', 'Noto Sans TC', 'Noto Sans JP', sans-serif";
+  }, [lang]);
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -421,6 +533,7 @@ export default function App() {
     }
     
     setActiveTab(newTabId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -465,9 +578,6 @@ export default function App() {
 
   const handleVisualClose = useCallback(() => {
     window.speechSynthesis.cancel();
-    if (audioContextRef.current) {
-        // Keep context alive
-    }
     setIsDetailClosing(true);
     setTimeout(() => {
         setSelectedItem(null);
@@ -507,47 +617,80 @@ export default function App() {
         .replace(/午後は/g, '午後わ');
   };
 
+  const loadAudioBuffers = useCallback(async (text: string, char: string): Promise<AudioBuffer[]> => {
+    const cacheKey = `${char}:${text}`;
+    if (audioCacheRef.current.has(cacheKey)) {
+        return audioCacheRef.current.get(cacheKey)!;
+    }
+
+    const promise = (async () => {
+        const primaryId = char === 'zundamon' ? 3 : 2;
+        const secondaryId = char === 'zundamon' ? 2 : 3;
+
+        const lines = text.split('\n').filter(l => l.trim() !== '');
+        const audioQueue: { text: string, speakerId: number }[] = [];
+
+        for (const line of lines) {
+            const cleanLine = line.replace(/[\(（].*?[\)）]/g, '').trim();
+            if (!cleanLine) continue;
+            
+            const match = cleanLine.match(/^([ABＡＢ][:：]?\s*)(.*)/i);
+            if (match) {
+                 const prefix = match[1];
+                 const spokenText = match[2];
+                 const isB = prefix.toUpperCase().includes('B') || prefix.includes('Ｂ');
+                 if (spokenText) audioQueue.push({ text: spokenText, speakerId: isB ? secondaryId : primaryId });
+            } else {
+                 audioQueue.push({ text: cleanLine, speakerId: primaryId });
+            }
+        }
+
+        if (audioQueue.length === 0) return [];
+
+        if (!audioContextRef.current) {
+             const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+             audioContextRef.current = new AudioContext();
+        }
+
+        const buffers: AudioBuffer[] = [];
+        for (const q of audioQueue) {
+            try {
+                 const url = `https://api.tts.quest/v3/voicevox/synthesis?text=${encodeURIComponent(q.text)}&speaker=${q.speakerId}`;
+                 const res = await fetchWithRetry(url);
+                 const data = await res.json();
+                 
+                 if (data.mp3StreamingUrl) {
+                    await new Promise(r => setTimeout(r, 150));
+                    
+                    const audioRes = await fetchWithRetry(data.mp3StreamingUrl);
+                    const ab = await audioRes.arrayBuffer();
+                    
+                    if (audioContextRef.current) {
+                        const decoded = await audioContextRef.current.decodeAudioData(ab);
+                        buffers.push(decoded);
+                    }
+                 }
+            } catch (e) {
+                 console.error("Audio segment load failed", e);
+            }
+        }
+        
+        return buffers;
+    })();
+
+    const cachedPromise = promise.catch(e => {
+        audioCacheRef.current.delete(cacheKey);
+        throw e;
+    });
+
+    audioCacheRef.current.set(cacheKey, cachedPromise);
+    return cachedPromise;
+  }, []);
+
   const playVoicevoxAudio = async (text: string, id: string) => {
       setPlayingId(id);
       setIsAiLoading(true);
       
-      const primaryId = selectedGender === 'female' ? 3 : 13;
-      const secondaryId = selectedGender === 'female' ? 13 : 3;
-
-      const lines = text.split('\n').filter(l => l.trim() !== '');
-      const audioQueue: { text: string, speakerId: number }[] = [];
-
-      for (const line of lines) {
-          const cleanLine = line.replace(/[\(（].*?[\)）]/g, '').trim();
-          if (!cleanLine) continue;
-
-          const match = cleanLine.match(/^([ABＡＢ][:：]?\s*)(.*)/i);
-          
-          if (match) {
-              const prefix = match[1];
-              const spokenText = match[2];
-              const isB = prefix.toUpperCase().includes('B') || prefix.includes('Ｂ');
-              
-              if (spokenText) {
-                  audioQueue.push({
-                      text: spokenText,
-                      speakerId: isB ? secondaryId : primaryId
-                  });
-              }
-          } else {
-              audioQueue.push({
-                  text: cleanLine,
-                  speakerId: primaryId
-              });
-          }
-      }
-
-      if (audioQueue.length === 0) {
-          setIsAiLoading(false);
-          setPlayingId(null);
-          return;
-      }
-
       try {
           if (!audioContextRef.current) {
                const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
@@ -557,62 +700,31 @@ export default function App() {
               await audioContextRef.current.resume();
           }
 
-          // Use parallel requests instead of sequential for faster load time
-          const audioPromises = audioQueue.map(async (item) => {
-              try {
-                  const url = `https://api.tts.quest/v3/voicevox/synthesis?text=${encodeURIComponent(item.text)}&speaker=${item.speakerId}`;
-                  const response = await fetchWithRetry(url);
-                  const data = await response.json();
-                  if (!data.mp3StreamingUrl) throw new Error("No URL returned from API");
-                  
-                  const audioRes = await fetchWithRetry(data.mp3StreamingUrl);
-                  const arrayBuffer = await audioRes.arrayBuffer();
-                  
-                  if (audioContextRef.current) {
-                      return await audioContextRef.current.decodeAudioData(arrayBuffer);
-                  }
-                  return null;
-              } catch (e) {
-                  console.warn("Audio fetch failed for item", item.text, e);
-                  return null;
-              }
-          });
+          const buffers = await loadAudioBuffers(text, selectedCharacter);
+          setIsAiLoading(false); 
           
-          // Play buffers sequentially as they resolve
-          let nextStartTime = audioContextRef.current.currentTime + 0.1;
-          
-          for (let i = 0; i < audioPromises.length; i++) {
-              // Wait for the specific index to be ready
-              const buffer = await audioPromises[i];
-              
-              // As soon as the first clip is ready, stop the loading spinner
-              if (i === 0) setIsAiLoading(false);
-
-              if (buffer && audioContextRef.current) {
-                  const source = audioContextRef.current.createBufferSource();
-                  source.buffer = buffer;
-                  source.playbackRate.value = playbackSpeed;
-                  source.connect(audioContextRef.current.destination);
-                  
-                  // Ensure we don't start in the past if network lagged
-                  const now = audioContextRef.current.currentTime;
-                  const startTime = Math.max(nextStartTime, now);
-                  
-                  source.start(startTime);
-                  
-                  const effectiveDuration = buffer.duration / playbackSpeed;
-                  // Reduce gap to 0.05s for snappier dialogue
-                  nextStartTime = startTime + effectiveDuration + 0.05;
-
-                  if (i === audioPromises.length - 1) {
-                      source.onended = () => {
-                          setPlayingId(null);
-                      };
-                  }
-              } else if (i === audioPromises.length - 1) {
-                  setPlayingId(null);
-              }
+          if (!buffers || buffers.length === 0) {
+              setPlayingId(null);
+              return;
           }
+
+          let nextStartTime = audioContextRef.current.currentTime + 0.05;
+          
+          buffers.forEach((buffer, i) => {
+               if (!audioContextRef.current) return;
+               const source = audioContextRef.current.createBufferSource();
+               source.buffer = buffer;
+               source.playbackRate.value = playbackSpeed;
+               source.connect(audioContextRef.current.destination);
+               source.start(nextStartTime);
+               
+               const duration = buffer.duration / playbackSpeed;
+               nextStartTime += duration + 0.05;
+               
+               if (i === buffers.length - 1) {
+                   source.onended = () => setPlayingId(null);
+               }
+          });
 
       } catch (error) {
           console.error("VOICEVOX Error:", error);
@@ -645,22 +757,20 @@ export default function App() {
         
         u.lang = 'ja-JP';
         
-        let selectedVoice = availableVoices[selectedGender] || availableVoices.female || availableVoices.male;
+        let selectedVoice = availableVoices.female || availableVoices.male;
         
         if (selectedVoice) {
             u.voice = selectedVoice;
         }
         
-        if (cleanLines.length > 1 && line.isB) {
-             if (selectedGender === 'female' && availableVoices.male) {
-                 u.voice = availableVoices.male;
-             } else if (selectedGender === 'male' && availableVoices.female) {
-                 u.voice = availableVoices.female;
-             } else {
-                 u.pitch = 0.8;
-             }
+        const isZundamon = selectedCharacter === 'zundamon';
+        const isPrimary = !line.isB;
+        const currentIsZundamon = (isZundamon && isPrimary) || (!isZundamon && !isPrimary);
+
+        if (currentIsZundamon) {
+            u.pitch = 1.3;
         } else {
-             u.pitch = 1.0;
+            u.pitch = 1.0;
         }
 
         u.rate = playbackSpeed; 
@@ -701,18 +811,52 @@ export default function App() {
       }
   };
 
+  useEffect(() => {
+    if (selectedItem && useVoicevox && isOnline) {
+         const termText = selectedItem.kana || selectedItem.term;
+         const exText = getLocalizedText(selectedItem, 'example');
+         
+         loadAudioBuffers(termText, selectedCharacter).catch(e => console.debug('Preload term failed', e));
+         loadAudioBuffers(exText, selectedCharacter).catch(e => console.debug('Preload example failed', e));
+    }
+  }, [selectedItem, useVoicevox, isOnline, selectedCharacter, loadAudioBuffers, getLocalizedText]);
+
   const renderChatBubbles = (exampleText: string) => {
-      const lines = exampleText.split('\n').filter(l => l.trim().length > 0);
+      const rawLines = exampleText.split('\n').filter(l => l.trim().length > 0);
+      const parsedBubbles: { isB: boolean; text: string; translation: string }[] = [];
+
+      for (let i = 0; i < rawLines.length; i++) {
+          const line = rawLines[i];
+          const isB = line.trim().startsWith('B') || line.trim().startsWith('Ｂ');
+          
+          const inlineTransMatch = line.match(/[\(（](.*?)[\)）]/);
+          const inlineTrans = inlineTransMatch ? inlineTransMatch[1] : "";
+          
+          const cleanText = line
+              .replace(/^([ABＡＢ][:：]?\s*)/i, '')
+              .replace(/[\(（].*?[\)）]/g, '')
+              .trim();
+
+          const isOrphanTranslation = /^[\(（]/.test(line.trim()) && !cleanText;
+
+          if (isOrphanTranslation) {
+             if (inlineTransMatch && parsedBubbles.length > 0) {
+                 parsedBubbles[parsedBubbles.length - 1].translation = inlineTransMatch[1];
+             }
+          } else if (cleanText) {
+             parsedBubbles.push({
+                 isB,
+                 text: cleanText,
+                 translation: inlineTrans
+             });
+          }
+      }
+
       const category = selectedItem?.cat || activeTab;
 
-      return lines.map((line, i) => {
-          const isB = line.trim().startsWith('B') || line.trim().startsWith('Ｂ');
-          const translationMatch = line.match(/\((.*?)\)/);
-          const translation = translationMatch ? translationMatch[1] : "";
-          const displayContent = line.replace(/^([ABＡＢ][:：]?\s*)/i, '').replace(/\(.*\)/g, '').trim();
+      return parsedBubbles.map((bubble, i) => {
+          const { isB, text, translation } = bubble;
           
-          if (!displayContent) return null;
-
           const bubbleStyle = isB 
             ? category === 'VALORANT' ? 'bg-[#ff4655] rounded-none [clip-path:polygon(0_0,100%_0,100%_100%,10%_100%,0_85%)]'
               : category === 'APEX' ? 'bg-[#da292a] skew-x-[-10deg]'
@@ -727,14 +871,14 @@ export default function App() {
               <div key={i} className={`flex ${isB ? 'justify-end' : 'justify-start'} mb-6 items-end gap-3`}>
                   {!isB && ( <Avatar cat={category} side="A" /> )}
                   <div className={`max-w-[75%] flex flex-col ${isB ? 'items-end' : 'items-start'}`}>
-                      <div className={`px-4 py-3 shadow-lg relative text-white ${bubbleStyle}`}>
-                          <div className={`text-base font-bold ${category === 'APEX' ? 'skew-x-[10deg]' : ''} ${category === 'VALORANT' ? 'uppercase tracking-wide' : ''} ${category === 'OW' && isB ? 'text-[#131519]' : ''}`}>
-                             {displayContent}
+                      <div className={`px-4 py-3 shadow-lg relative text-zinc-100 ${bubbleStyle}`}>
+                          <div className={`text-base font-bold leading-relaxed transition-all duration-300 ${category === 'APEX' ? 'skew-x-[10deg]' : ''} ${category === 'VALORANT' ? 'uppercase tracking-wide' : ''} ${category === 'OW' && isB ? 'text-[#131519]' : ''}`}>
+                             {text}
                           </div>
                           {translation && (
                               <div className={`text-[10px] mt-1 pt-1 border-t ${category === 'APEX' ? 'skew-x-[10deg]' : ''} ${
                                   isB ? (category === 'OW' ? 'border-[#131519]/20 text-[#131519]/80' : 'border-white/20 text-white/90') 
-                                      : 'border-white/10 text-neutral-400'
+                                      : 'border-white/10 text-zinc-400'
                               }`}>
                                   {translation}
                               </div>
@@ -749,7 +893,7 @@ export default function App() {
 
   return (
     <div 
-        className={`h-[100dvh] font-sans selection:bg-fuchsia-900 selection:text-white flex flex-col relative transition-colors duration-500 text-white overflow-x-hidden ${currentTheme.bgClass} ${lang === 'cn' ? 'font-noto-sc' : 'font-noto-tc'}`}
+        className={`h-[100dvh] selection:bg-fuchsia-900 selection:text-white flex flex-col relative transition-colors duration-500 text-zinc-100 overflow-x-hidden ${currentTheme.bgClass}`}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -758,142 +902,65 @@ export default function App() {
           {currentTheme.bgOverlay}
       </div>
 
-      <div className="fixed top-0 left-0 right-0 z-30 border-b border-white/10 bg-[#0a0a0c]/85 backdrop-blur-xl shadow-2xl transition-all duration-300 pt-[env(safe-area-inset-top)]">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute inset-0 flex transform -skew-x-12 scale-125 -ml-8 opacity-90 select-none">
-                <div className="flex-1 bg-gradient-to-br from-fuchsia-900 via-purple-900 to-indigo-950 border-r border-white/5"></div>
-                <div className="flex-1 bg-gradient-to-br from-[#ff4655] to-[#bd3944] border-r border-white/10 relative"></div>
-                <div className="flex-1 bg-gradient-to-br from-[#8e0e0e] to-[#5e1c1c] border-r border-white/10 relative"></div>
-                <div className="flex-1 bg-gradient-to-br from-[#f99e1a] to-[#b36b0e] relative"></div>
+      {/* --- TOP FLOATING BAR --- */}
+      <header className="fixed top-0 left-0 right-0 z-40 px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pointer-events-none">
+         <div className="flex items-center justify-between pointer-events-auto max-w-md mx-auto">
+            {/* Logo Pill - Glass Effect */}
+            <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-full shadow-lg shadow-black/20">
+                <div className="w-6 h-6 rounded-full overflow-hidden border border-white/20">
+                   <img src="/saiba.png" className="w-full h-full object-cover" />
+                </div>
+                <span className="font-bold text-sm tracking-wide text-zinc-100/90">Saki</span>
+                {!isOnline && <WifiOff className="w-3 h-3 text-red-400 ml-1" />}
             </div>
-            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0a0a0c]/90 backdrop-blur-[2px]"></div>
-        </div>
 
-        <div className="relative z-10 max-w-md mx-auto px-4 py-3 space-y-4">
-          <div className="flex items-center justify-between">
-             <div className="flex items-center gap-3">
-                <img src="/saiba.png" alt="Logo" className="w-8 h-8 rounded-lg shadow-lg shadow-fuchsia-500/20 object-cover border border-white/10" />
-                <h1 className="font-bold text-xl tracking-wide text-white drop-shadow-md">
-                  Saki comms
-                </h1>
-                {!isOnline && (
-                    <div className="flex items-center gap-1 px-2 py-0.5 bg-neutral-800/80 rounded-full border border-neutral-600 text-[10px] text-neutral-400">
-                        <WifiOff className="w-3 h-3" />
-                        <span>{uiText.offlineMode[lang]}</span>
+            {/* Action Buttons - Unified Glass Style */}
+            <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setShowLangMenu(!showLangMenu)}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-lg ${showLangMenu ? 'bg-zinc-100 text-black border-white' : 'bg-white/5 text-zinc-100 border-white/10 hover:bg-white/10 active:scale-95'}`}
+                >
+                    <span className="text-[10px] font-bold">{lang.toUpperCase()}</span>
+                </button>
+                {showLangMenu && (
+                    <div className="absolute top-[calc(env(safe-area-inset-top)+3.8rem)] right-16 z-50 bg-[#1a1a1c]/90 backdrop-blur-xl border border-white/10 rounded-xl p-1 shadow-2xl flex flex-col gap-1 min-w-[80px] animate-in slide-in-from-top-2 fade-in">
+                        {(['cn', 'tw', 'hk'] as const).map(l => (
+                             <button key={l} onClick={() => selectLang(l)} className={`px-3 py-2 text-xs font-bold rounded-lg text-left transition-colors ${lang === l ? 'bg-white/10 text-zinc-100' : 'text-zinc-400 hover:text-zinc-100'}`}>
+                                 {l.toUpperCase()}
+                             </button>
+                        ))}
                     </div>
                 )}
-             </div>
-             <div className="flex items-center gap-2">
-                 
-                 <div className="relative z-50 h-9 flex items-center justify-end">
-                     {showLangMenu && (
-                         <div 
-                             className="fixed inset-0 z-40 bg-black/5 backdrop-blur-[1px] animate-in fade-in duration-300"
-                             onClick={() => setShowLangMenu(false)}
-                         />
-                     )}
-                     
-                     <div 
-                        className={`relative z-50 h-9 flex items-center transition-all duration-500 ease-[cubic-bezier(0.32,0.725,0,1)] shadow-xl overflow-hidden border ${
-                            showLangMenu 
-                                ? 'w-[180px] bg-[#1a1a1c] border-white/20 rounded-full pl-1 pr-1' 
-                                : 'w-9 bg-transparent border-transparent rounded-lg'
-                        }`}
-                     >
-                        <button
-                            onClick={() => setShowLangMenu(true)}
-                            className={`absolute left-0 top-0 w-9 h-9 flex flex-col items-center justify-center transition-all duration-300 ${
-                                showLangMenu ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100 text-neutral-400 hover:text-white'
-                            }`}
-                        >
-                            <Globe className="w-5 h-5" />
-                            <span className="text-[10px] font-bold mt-0.5 leading-none">{lang === 'cn' ? 'CN' : (lang === 'hk' ? 'HK' : 'TW')}</span>
-                        </button>
-
-                        <div className={`flex items-center justify-between w-full h-full transition-all duration-500 ${showLangMenu ? 'opacity-100 translate-x-0 delay-75' : 'opacity-0 translate-x-4 pointer-events-none'}`}>
-                            <button onClick={() => selectLang('cn')} className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${lang === 'cn' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'}`}>CN</button>
-                            <div className="w-px h-3 bg-white/10"></div>
-                            <button onClick={() => selectLang('tw')} className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${lang === 'tw' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'}`}>TW</button>
-                            <div className="w-px h-3 bg-white/10"></div>
-                            <button onClick={() => selectLang('hk')} className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${lang === 'hk' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'}`}>HK</button>
-                        </div>
-                     </div>
-                 </div>
-
-                 <button
-                    onClick={toggleMaskMode}
-                    className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${isMaskMode ? 'bg-indigo-500/20 text-indigo-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-                 >
-                    {isMaskMode ? <EyeOff className="w-5 h-5 fill-current" /> : <Eye className="w-5 h-5" />}
-                    <span className="text-[10px] font-bold mt-0.5 leading-none">{isMaskMode ? 'Hide' : 'Show'}</span>
-                 </button>
-
-                 <button 
-                   onClick={() => setShowFavorites(!showFavorites)}
-                   className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all relative ${showFavorites ? 'bg-yellow-500/20 text-yellow-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-                 >
-                   <div className="relative">
-                       <Star className={`w-5 h-5 ${showFavorites ? 'fill-current' : ''}`} />
-                       <span className="absolute -bottom-1.5 -right-1 text-[8px] font-bold scale-75 origin-top-left bg-black/50 px-0.5 rounded text-white/90">推</span>
-                   </div>
-                   <span className="text-[10px] font-bold mt-0.5 leading-none">{uiText.favorite[lang]}</span>
-                 </button>
-
-                 {deferredPrompt && (
-                    <button onClick={handleInstallClick} className="flex items-center gap-2 bg-white text-black px-3 py-1.5 rounded-full text-xs font-bold hover:bg-neutral-200 transition-colors animate-pulse">
-                      <Download className="w-3 h-3" /> {uiText.install[lang]}
-                    </button>
-                 )}
-             </div>
-          </div>
-          
-          <div className="relative group">
-            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center gap-1 pointer-events-none transition-colors duration-300 group-focus-within:text-white text-neutral-400">
-               <Gamepad2 className="w-3 h-3 opacity-70" />
-               <Search className="w-4 h-4" />
-            </div>
-            <input 
-              type="text" 
-              placeholder={uiText.searchPlaceholder[lang]}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full bg-black/20 border border-white/10 py-3 pl-12 pr-4 text-sm text-white placeholder-white/50 focus:outline-none focus:bg-black/40 focus:border-white/30 transition-all backdrop-blur-md shadow-inner ${activeTab === 'VALORANT' ? 'rounded-none' : 'rounded-xl'} ${activeTab === 'APEX' ? 'skew-x-[-10deg]' : ''}`}
-            />
-             {searchTerm && (
-                <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-white">
-                  <X className="w-4 h-4" />
+                
+                <button 
+                  onClick={toggleMaskMode}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-lg ${isMaskMode ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-white/5 text-zinc-100 border-white/10 hover:bg-white/10 active:scale-95'}`}
+                >
+                    {isMaskMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              )}
-          </div>
-        </div>
-        
-        <div className="relative z-10 max-w-md mx-auto px-2 pb-0 mt-2 mb-2">
-          <div className="grid grid-cols-5 gap-1 w-full">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => handleTabChange(cat.id)}
-                className={`pb-2 border-b-2 transition-all duration-300 flex flex-col items-center justify-center gap-1 ${
-                  activeTab === cat.id 
-                    ? `${cat.color.split(' ')[0]} font-bold border-current scale-105`
-                    : 'border-transparent text-neutral-400 font-medium hover:text-white'
-                }`}
-              >
-                {activeTab === cat.id && <div className="mb-0.5">{cat.icon}</div>}
-                <span className={`text-[10px] leading-tight text-center truncate w-full ${cat.id === 'VALORANT' ? 'uppercase' : ''} ${cat.id === 'OW' ? 'italic' : ''}`}>
-                  {cat.id === 'LIFE' ? uiText.lifeCat[lang] : (lang === 'cn' ? cat.name : (lang === 'hk' ? (cat.name_hk || cat.name_tw) : cat.name_tw))}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
 
-      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-[calc(13rem+env(safe-area-inset-top))] pb-40 relative z-10 safe-pb">
+                {deferredPrompt && (
+                   <button onClick={handleInstallClick} className="w-10 h-10 rounded-full flex items-center justify-center bg-zinc-100 text-black shadow-lg active:scale-95 animate-pulse">
+                      <Download className="w-4 h-4" />
+                   </button>
+                )}
+            </div>
+         </div>
+      </header>
+
+      {/* --- MAIN SCROLLABLE CONTENT --- */}
+      <main className="flex-1 w-full max-w-md mx-auto px-4 pb-[240px] pt-[calc(env(safe-area-inset-top)+6rem)] overflow-y-auto no-scrollbar">
+        {/* Category Title Header */}
+        <div className="mb-6 mt-4 pl-2">
+            <h2 className="text-[18px] font-semibold text-zinc-50 inline-block relative pb-1">
+                {showFavorites ? uiText.favorite[lang] : activeCategoryName}
+                <div className={`absolute bottom-0 left-0 right-0 h-[1px] ${currentTheme.underlineColor}`}></div>
+            </h2>
+        </div>
+
         <div key={activeTab + (showFavorites ? '-fav' : '') + lang} className={`space-y-3 ${animClass}`}>
           {filteredData.length > 0 ? (
             filteredData.map((item) => {
-              const itemTheme = THEME_STYLES[item.cat] || THEME_STYLES['LIFE'];
               const displayMeaning = getLocalizedText(item, 'meaning');
 
               return (
@@ -904,29 +971,33 @@ export default function App() {
                     activeTab === 'ALL' ? THEME_STYLES['ALL'].cardClass : currentTheme.cardClass
                 }`}
               >
+                {/* Background Animation Layer */}
                 {activeTab === 'ALL' ? THEME_STYLES['ALL'].cardBgContent : currentTheme.cardBgContent}
                 
-                <div className={`flex-1 min-w-0 pr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
-                  <h3 className={`font-bold text-base text-white mb-1 truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'not-italic' : ''}`}>
+                {/* Left: Glass Icon Decoration - UNIFIED for all cards */}
+                <div className={`mr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
+                    <GlassListIcon cat={item.cat} />
+                </div>
+
+                {/* Center: Content */}
+                <div className={`flex-1 min-w-0 pr-2 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
+                  {/* Main Text: 16px, 500, Soft White (Zinc-100), Relaxed Line Height */}
+                  <h3 className={`font-medium text-[16px] text-zinc-100 leading-relaxed mb-0.5 truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'not-italic' : ''}`}>
                       {displayMeaning}
                   </h3>
-                  <div className="flex items-center gap-2">
-                      {activeTab === 'ALL' && (
-                         <span className={`text-[9px] px-1.5 py-0.5 rounded border ${itemTheme.accentColorClass.replace('text-', 'border-').replace('font-bold', '')} opacity-70`}>
-                             {item.cat === 'LIFE' ? uiText.lifeCat[lang] : item.cat}
-                         </span>
-                      )}
-                      <p className={`text-sm truncate font-mono flex items-center gap-2 group-hover:text-white transition-colors ${
-                          activeTab === 'ALL' ? 'text-neutral-400' : currentTheme.accentColorClass
-                      }`}>
-                        <span>{item.term}</span>
-                        {item.kana !== item.term && <span className="opacity-70 text-neutral-500 border-l border-neutral-600 pl-2 group-hover:text-neutral-300">{item.kana}</span>}
-                      </p>
-                  </div>
+                  
+                  {/* Sub Text: 14px, 400, Cool Grey (Slate-400) */}
+                  <p className={`text-[14px] font-normal text-slate-400 truncate font-mono flex items-center gap-2 group-hover:text-zinc-200 transition-colors`}>
+                    <span>{item.term}</span>
+                    {/* Simplified List View: Just Kana if different */}
+                    {item.kana !== item.term && <span className="opacity-70 border-l border-neutral-600 pl-2 group-hover:text-neutral-300">{item.kana}</span>}
+                  </p>
                 </div>
+
+                {/* Right: Favorite Button */}
                 <button
                     onClick={(e) => toggleFavorite(e, item.id)}
-                    className="p-3 -mr-3 relative z-10 text-neutral-500 hover:text-yellow-400 transition-colors"
+                    className={`p-2 relative z-10 text-neutral-600 hover:text-yellow-400 transition-colors ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}
                 >
                     <Star className={`w-5 h-5 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                 </button>
@@ -940,92 +1011,175 @@ export default function App() {
         </div>
       </main>
 
+      {/* --- BOTTOM FLOATING DOCK --- */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pointer-events-none">
+         <div className="max-w-md mx-auto flex flex-col gap-3 pointer-events-auto">
+             
+             {/* 1. Floating Search Bar (Stacked Above Tabs) */}
+             <div className={`relative bg-zinc-900/80 rounded-2xl border border-white/10 flex items-center px-4 h-12 transition-all focus-within:border-white/30 focus-within:shadow-[0_0_25px_-5px_rgba(255,255,255,0.15)] backdrop-blur-xl shadow-lg shadow-black/50 overflow-hidden group`}>
+                {/* Tech Accent Line */}
+                <div className={`absolute top-0 left-0 bottom-0 w-1 ${
+                    activeTab === 'VALORANT' ? 'bg-[#ff4655]' : 
+                    activeTab === 'APEX' ? 'bg-[#da292a]' : 
+                    activeTab === 'OW' ? 'bg-[#f99e1a]' : 
+                    activeTab === 'LIFE' ? 'bg-fuchsia-500' : 'bg-blue-500'
+                } opacity-50`}></div>
+                
+                <Search className="w-5 h-5 text-zinc-400 mr-3" />
+                <input 
+                   type="text"
+                   value={searchTerm}
+                   onChange={(e) => setSearchTerm(e.target.value)}
+                   placeholder={uiText.searchPlaceholder[lang]}
+                   className="bg-transparent border-none outline-none text-base text-zinc-100 w-full placeholder-zinc-500 font-medium tracking-wide h-full"
+                />
+                
+                {/* Integrated Controls Right Side */}
+                <div className="flex items-center gap-2">
+                    {searchTerm && (
+                        <button onClick={() => setSearchTerm('')} className="p-1.5 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
+                            <X className="w-4 h-4 text-zinc-100" />
+                        </button>
+                    )}
+                    {/* Vertical Separator for HUD look */}
+                    <div className="w-px h-4 bg-white/10 mx-1"></div>
+                    
+                    <button 
+                        onClick={() => setShowFavorites(!showFavorites)}
+                        className={`p-1.5 rounded-full transition-all active:scale-95 ${showFavorites ? 'text-yellow-400 bg-yellow-400/10' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                        <Star className={`w-5 h-5 ${showFavorites ? 'fill-current' : ''}`} />
+                    </button>
+                </div>
+             </div>
+
+             {/* 2. Category Tabs (The Dock) */}
+             <div className={`backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden p-3 transition-all duration-500 bg-black/40 ${
+                 activeTab === 'VALORANT' ? 'shadow-rose-900/20 border-rose-500/10' : 
+                 activeTab === 'APEX' ? 'shadow-red-900/20 border-red-500/10' :
+                 activeTab === 'OW' ? 'shadow-orange-900/20 border-orange-500/10' :
+                 'shadow-black/50'
+             }`}>
+                 <div className="flex items-center justify-between px-2 pt-1">
+                    {CATEGORIES.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => handleTabChange(cat.id)}
+                        className={`flex flex-col items-center justify-center gap-1.5 transition-all duration-300 group ${
+                            activeTab === cat.id ? 'opacity-100 scale-110' : 'opacity-50 hover:opacity-80 scale-100'
+                        }`}
+                      >
+                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${
+                             activeTab === cat.id 
+                                ? `bg-white/10 border-white/20 shadow-lg backdrop-blur-md` 
+                                : 'bg-transparent border-transparent group-hover:bg-white/5'
+                         }`}>
+                             <div className={`${activeTab === cat.id ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`}>
+                                {cat.icon}
+                             </div>
+                         </div>
+                         <span className={`text-[9px] font-bold tracking-wide ${activeTab === cat.id ? 'text-zinc-100' : 'text-neutral-400'}`}>
+                             {cat.id === 'LIFE' ? uiText.lifeCat[lang] : (lang === 'cn' ? cat.name : (lang === 'hk' ? (cat.name_hk || cat.name_tw) : cat.name_tw))}
+                         </span>
+                      </button>
+                    ))}
+                 </div>
+             </div>
+         </div>
+      </div>
+
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex justify-center pointer-events-none">
-          <div className={`w-full max-w-md flex flex-col h-[100dvh] pointer-events-auto shadow-2xl relative overflow-hidden ${detailTheme.detailBgClass} ${isDetailClosing ? 'animate-overlay-exit' : 'animate-overlay-enter'}`}>
+          {/* Main Detail Container */}
+          <div className={`w-full max-w-md flex flex-col h-[100dvh] pointer-events-auto shadow-2xl relative overflow-hidden ${detailTheme.detailBgClass} ${isDetailClosing ? 'animate-collapse-vertical' : 'animate-expand-vertical'}`}>
+            {/* Ambient Background Overlay (Preserves context) */}
             {detailTheme.bgOverlay}
             
-            <div className="absolute top-0 left-0 right-0 px-4 py-4 flex items-center justify-between bg-black/40 backdrop-blur-md z-50 border-b border-white/5 pt-[env(safe-area-inset-top,20px)]">
-                <button onClick={closeDetail} className="p-2 -ml-2 text-neutral-400 hover:text-white transition-colors rounded-full hover:bg-white/10">
-                    <ChevronLeft className="w-6 h-6" />
+            {/* Detail Top Controls (Floating) */}
+            <div className="fixed top-0 left-0 right-0 p-4 pt-[calc(env(safe-area-inset-top)+1rem)] flex justify-between z-50 pointer-events-none max-w-md mx-auto">
+                <button
+                    onClick={closeDetail}
+                    className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xl border border-white/10 text-zinc-100 shadow-xl active:scale-95 transition-all hover:bg-black/60"
+                >
+                    <ChevronLeft className="w-6 h-6 -ml-0.5" />
                 </button>
-                <span className={`text-sm font-bold text-neutral-200/80 ${selectedItem.cat === 'VALORANT' ? 'uppercase tracking-widest' : ''}`}>
-                    {lang === 'cn' 
-                        ? CATEGORIES.find(c => c.id === selectedItem.cat)?.name 
-                        : (lang === 'hk' ? (CATEGORIES.find(c => c.id === selectedItem.cat)?.name_hk || CATEGORIES.find(c => c.id === selectedItem.cat)?.name_tw) : CATEGORIES.find(c => c.id === selectedItem.cat)?.name_tw)}
-                </span>
-                
-                <div className="flex items-center gap-1 -mr-2">
+
+                <div className="flex gap-2">
                     <button 
                         onClick={(e) => toggleFavorite(e, selectedItem.id)}
-                        className={`p-2 rounded-full transition-colors ${favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-neutral-400'}`}
+                        className={`pointer-events-auto w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl active:scale-95 transition-all hover:bg-black/60 ${favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-neutral-200'}`}
                     >
                         <Star className={`w-6 h-6 ${favorites.includes(selectedItem.id) ? 'fill-current' : ''}`} />
                     </button>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-64 pt-[calc(5rem+env(safe-area-inset-top))] safe-pb">
-                <div className="px-6 pt-8 pb-6 text-center border-b border-white/5 relative">
-                    <div className="absolute top-0 left-0 w-full h-[300px] z-0 overflow-hidden pointer-events-none">
-                        <div className={`w-full h-full relative flex items-center justify-center overflow-hidden`}>
-                            <div className={`absolute inset-0 opacity-20 transform scale-150 blur-xl ${
-                                 selectedItem.cat === 'VALORANT' ? 'bg-rose-900' :
-                                 selectedItem.cat === 'APEX' ? 'bg-red-900' :
-                                 selectedItem.cat === 'OW' ? 'bg-orange-900' :
-                                 'bg-fuchsia-900'
-                            }`}></div>
-                            <div className="transform scale-[8] opacity-10 text-white">
-                                {CATEGORIES.find(c => c.id === selectedItem.cat)?.icon}
-                            </div>
-                        </div>
-                        <div className={`absolute inset-0 bg-gradient-to-b from-transparent via-${detailTheme.bgClass.replace('bg-','')}/80 to-${detailTheme.bgClass.replace('bg-','')}`}></div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] to-transparent"></div>
-                    </div>
-
-                    <h1 className={`text-3xl font-black text-white mb-2 leading-tight drop-shadow-lg relative z-10 ${selectedItem.cat === 'OW' ? 'not-italic' : ''} ${selectedItem.cat === 'APEX' ? 'uppercase' : ''}`}>
-                        {getLocalizedText(selectedItem, 'meaning')}
-                    </h1>
-                    
-                    <button 
+            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-[280px]">
+                {/* HERO SECTION */}
+                <div className="px-6 pt-[calc(6rem+env(safe-area-inset-top))] pb-8 text-center relative">
+                     {/* Term (Japanese) - Playable Hero */}
+                     <button 
                         onClick={() => handlePlay(selectedItem.kana || selectedItem.term, 'term')}
-                        className={`group/term relative z-10 inline-flex items-center justify-center gap-2 px-4 py-2 mt-1 mx-auto rounded-lg transition-all active:scale-95 hover:bg-white/5 cursor-pointer`}
+                        className={`group/term relative z-10 flex items-center justify-center gap-3 mx-auto transition-all active:scale-[0.98] cursor-pointer mb-1`}
                     >
-                        <p className={`text-2xl font-bold font-mono tracking-wide drop-shadow-md ${detailTheme.accentColorClass}`}>
+                        <h1 className={`text-5xl font-black tracking-tight drop-shadow-xl ${detailTheme.accentColorClass} ${selectedItem.cat === 'VALORANT' ? 'uppercase' : ''} ${selectedItem.cat === 'APEX' ? 'italic skew-x-[-6deg]' : ''}`}>
                             {selectedItem.term}
-                        </p>
-                        <div className={`text-neutral-500 group-hover/term:text-white transition-colors ${playingId === 'term' ? 'text-white' : ''}`}>
-                             {playingId === 'term' ? (isAiLoading && useVoicevox ? <Loader2 className="w-5 h-5 animate-spin" /> : <Volume2 className="w-5 h-5 animate-pulse" />) : <Volume2 className="w-5 h-5" />}
+                        </h1>
+                        
+                        {/* Audio Icon - Explicitly styled as requested */}
+                        <div className={`${detailTheme.accentColorClass} ${playingId === 'term' ? 'opacity-100' : 'opacity-70 group-hover/term:opacity-100'} transition-opacity`}>
+                             {playingId === 'term' && isAiLoading && useVoicevox ? (
+                                 <Loader2 className="w-6 h-6 animate-spin" />
+                             ) : (
+                                 <Volume2 className="w-6 h-6" />
+                             )}
                         </div>
                     </button>
-                    
-                    <p className="text-sm text-neutral-400 font-mono mt-3 relative z-10">
-                        {selectedItem.kana} · {selectedItem.romaji}
+
+                    {/* Meaning (Native) - Subtitle */}
+                    <p className={`text-xl font-medium text-zinc-300 leading-tight mb-4 drop-shadow-md ${selectedItem.cat === 'OW' ? 'not-italic' : ''}`}>
+                        {getLocalizedText(selectedItem, 'meaning')}
                     </p>
-                    <div className={`mt-6 bg-black/40 p-4 border border-white/10 inline-block text-sm text-neutral-200 backdrop-blur-md shadow-xl relative z-10 ${selectedItem.cat === 'VALORANT' ? 'rounded-none border-l-4 border-l-rose-600' : selectedItem.cat === 'APEX' ? 'skew-x-[-6deg] border-r-4 border-r-red-600' : 'rounded-xl'}`}>
-                        <span className={selectedItem.cat === 'APEX' ? 'skew-x-[6deg] block' : ''}>💡 {getLocalizedText(selectedItem, 'desc')}</span>
+                    
+                    {/* Meta Data Pill */}
+                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm text-sm font-mono text-zinc-400">
+                        <span>{selectedItem.kana}</span>
+                        <span className="text-zinc-600">•</span>
+                        <span>{selectedItem.romaji}</span>
+                    </div>
+
+                    {/* Description Card */}
+                    <div className={`mt-6 w-full p-5 border border-white/10 backdrop-blur-md shadow-lg relative overflow-hidden group hover:border-white/20 transition-all ${
+                        selectedItem.cat === 'VALORANT' ? 'bg-[#0f1923]/80 rounded-none border-l-4 border-l-[#ff4655]' : 
+                        selectedItem.cat === 'APEX' ? 'bg-[#1a0b0b]/80 skew-x-[-3deg] border-r-4 border-r-[#da292a]' : 
+                        'bg-black/40 rounded-2xl'
+                    }`}>
+                        <div className="absolute top-0 right-0 p-3 opacity-20">
+                            <GlassListIcon cat={selectedItem.cat} />
+                        </div>
+                        <div className={`relative z-10 text-left ${selectedItem.cat === 'APEX' ? 'skew-x-[3deg]' : ''}`}>
+                            <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1">{uiText.description[lang]}</div>
+                            <p className="text-sm text-zinc-200 leading-relaxed">
+                                {getLocalizedText(selectedItem, 'desc')}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="px-4 py-6">
+                {/* EXAMPLE SECTION */}
+                <div className="px-4 pb-6">
                     <div className="flex items-center justify-between mb-4 px-2">
-                        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
-                            <MessageCircle className="w-3 h-3" /> 
-                            {selectedItem.cat === 'LIFE' ? uiText.lifeScene[lang] : uiText.gameVoice[lang]}
-                        </span>
-                        
-                        <div className="flex items-center gap-2">
-                             <button 
-                                onClick={() => handlePlay(getLocalizedText(selectedItem, 'example'), 'ex')}
-                                className={`flex items-center gap-2 px-3 py-1.5 text-white transition-all active:scale-95 shadow-lg hover:brightness-110 relative z-20 ${detailTheme.buttonClass}`}
-                            >
-                                {playingId === 'ex' 
-                                    ? (isAiLoading && useVoicevox ? <Loader2 className="w-3 h-3 animate-spin" /> : <Volume2 className="w-3 h-3 animate-pulse" />)
-                                    : <Play className="w-3 h-3" />
-                                }
-                                <span className={`text-[10px] font-bold not-italic ${selectedItem.cat === 'APEX' ? 'skew-x-[10deg] inline-block' : ''}`}>{uiText.play[lang]}</span>
-                            </button>
-                        </div>
+                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider pl-1">{uiText.example[lang]}</span>
+                        <button 
+                            onClick={() => handlePlay(getLocalizedText(selectedItem, 'example'), 'ex')}
+                            className={`flex items-center gap-2 px-3 py-1.5 transition-all active:scale-95 shadow-lg hover:brightness-110 relative z-20 ${detailTheme.buttonClass} text-xs`}
+                        >
+                            {playingId === 'ex' 
+                                ? (isAiLoading && useVoicevox ? <Loader2 className="w-3 h-3 animate-spin" /> : <Volume2 className="w-3 h-3 animate-pulse" />)
+                                : <Play className="w-3 h-3" />
+                            }
+                            <span className={`font-bold not-italic ${selectedItem.cat === 'APEX' ? 'skew-x-[10deg] inline-block' : ''}`}>{uiText.play[lang]}</span>
+                        </button>
                     </div>
                     <div className="space-y-4 pb-4">
                         {renderChatBubbles(getLocalizedText(selectedItem, 'example'))}
@@ -1033,65 +1187,68 @@ export default function App() {
                 </div>
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0c]/90 backdrop-blur-md border-t border-white/10 z-50 safe-pb pb-[env(safe-area-inset-bottom)]">
-                 <div className="px-4 py-3 space-y-3">
+            {/* Bottom Controls Panel - Animated & Premium */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black via-zinc-950/95 to-transparent pt-12 pb-[env(safe-area-inset-bottom)] pointer-events-auto">
+                 <div className="px-6 pb-4 max-w-md mx-auto">
                     
-                    <div className="grid grid-cols-2 gap-3">
-                         <button
-                            onClick={() => setSelectedGender('female')}
-                            className={`relative h-14 rounded-xl border transition-all overflow-hidden group ${selectedGender === 'female' ? 'bg-fuchsia-900/40 border-fuchsia-500/50 shadow-[0_0_15px_-3px_rgba(217,70,239,0.3)]' : 'bg-neutral-800/40 border-white/5 hover:bg-white/5'}`}
-                         >
-                            <div className="absolute inset-0 flex items-center justify-center gap-3">
-                                <div className={`p-2 rounded-lg ${selectedGender === 'female' ? 'bg-fuchsia-500 text-white shadow-lg' : 'bg-neutral-700 text-neutral-400'}`}>
-                                    <Sparkles className="w-5 h-5" />
-                                </div>
-                                <div className="text-left">
-                                    <div className={`text-xs font-bold leading-none ${selectedGender === 'female' ? 'text-white' : 'text-neutral-400'}`}>Zundamon</div>
-                                    <div className="text-[9px] text-white/40 font-mono mt-1">CV: 萌系少女</div>
-                                </div>
-                            </div>
-                            {selectedGender === 'female' && <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-bl from-fuchsia-500/20 to-transparent"></div>}
-                         </button>
-
-                         <button
-                            onClick={() => setSelectedGender('male')}
-                            className={`relative h-14 rounded-xl border transition-all overflow-hidden group ${selectedGender === 'male' ? 'bg-cyan-900/40 border-cyan-500/50 shadow-[0_0_15px_-3px_rgba(6,182,212,0.3)]' : 'bg-neutral-800/40 border-white/5 hover:bg-white/5'}`}
-                         >
-                            <div className="absolute inset-0 flex items-center justify-center gap-3">
-                                <div className={`p-2 rounded-lg ${selectedGender === 'male' ? 'bg-cyan-500 text-black shadow-lg' : 'bg-neutral-700 text-neutral-400'}`}>
-                                    <Zap className="w-5 h-5 fill-current" />
-                                </div>
-                                <div className="text-left">
-                                    <div className={`text-xs font-bold leading-none ${selectedGender === 'male' ? 'text-white' : 'text-neutral-400'}`}>Ryusei</div>
-                                    <div className="text-[9px] text-white/40 font-mono mt-1">CV: 热血少年</div>
-                                </div>
-                            </div>
-                            {selectedGender === 'male' && <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-bl from-cyan-500/20 to-transparent"></div>}
-                         </button>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex-1 flex bg-neutral-900/50 rounded-lg p-1 border border-white/5">
+                    {/* Glass Control Capsule */}
+                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-1.5 shadow-2xl shadow-black/50 mb-3 flex items-center justify-between gap-3">
+                         {/* Speed Controls (Segmented) */}
+                         <div className="flex bg-black/30 rounded-xl p-1 flex-1">
                             {[0.5, 0.75, 1.0].map(s => (
                                 <button 
                                     key={s}
                                     onClick={() => setPlaybackSpeed(s)}
-                                    className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${playbackSpeed === s ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    className={`flex-1 py-2 rounded-lg text-[10px] font-bold transition-all duration-300 ${playbackSpeed === s ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
                                 >
                                     {s}x
                                 </button>
                             ))}
-                        </div>
-                        
-                        <div className="h-6 w-px bg-white/10"></div>
-
-                        <button 
+                         </div>
+                         
+                         {/* Source Toggle Switch */}
+                         <button 
                             onClick={() => setUseVoicevox(!useVoicevox)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${useVoicevox ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-neutral-800 border-white/5 text-neutral-500'}`}
-                        >
-                            <div className={`w-2 h-2 rounded-full ${useVoicevox ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-600'}`}></div>
-                            <span className="text-[10px] font-bold">{useVoicevox ? 'ONLINE AI' : 'OFFLINE'}</span>
-                        </button>
+                            className={`relative px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 overflow-hidden ${useVoicevox ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-zinc-800 border border-white/5'}`}
+                         >
+                            <div className={`w-2 h-2 rounded-full ${useVoicevox ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></div>
+                            <span className={`text-xs font-bold ${useVoicevox ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                                {useVoicevox ? uiText.voiceMode.online[lang] : uiText.voiceMode.offline[lang]}
+                            </span>
+                         </button>
+                    </div>
+
+                    {/* Animated Character Drawer */}
+                    <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden ${useVoicevox ? 'max-h-24 opacity-100 translate-y-0' : 'max-h-0 opacity-0 translate-y-4'}`}>
+                        <div className="grid grid-cols-2 gap-3 pb-2">
+                             <button
+                                onClick={() => setSelectedCharacter('zundamon')}
+                                className={`relative h-14 rounded-xl border transition-all duration-200 overflow-hidden group active:scale-95 ${selectedCharacter === 'zundamon' ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
+                             >
+                                <div className="absolute inset-0 flex items-center justify-center gap-3">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${selectedCharacter === 'zundamon' ? 'bg-emerald-500 text-white shadow-lg scale-110' : 'bg-zinc-800 text-zinc-500'}`}>
+                                        <Leaf className="w-4 h-4" />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className={`text-xs font-bold leading-none transition-colors ${selectedCharacter === 'zundamon' ? 'text-emerald-400' : 'text-zinc-400'}`}>{uiText.zundamon[lang]}</div>
+                                    </div>
+                                </div>
+                             </button>
+
+                             <button
+                                onClick={() => setSelectedCharacter('metan')}
+                                className={`relative h-14 rounded-xl border transition-all duration-200 overflow-hidden group active:scale-95 ${selectedCharacter === 'metan' ? 'bg-fuchsia-500/10 border-fuchsia-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
+                             >
+                                <div className="absolute inset-0 flex items-center justify-center gap-3">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${selectedCharacter === 'metan' ? 'bg-fuchsia-500 text-white shadow-lg scale-110' : 'bg-zinc-800 text-zinc-500'}`}>
+                                        <Sparkles className="w-4 h-4" />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className={`text-xs font-bold leading-none transition-colors ${selectedCharacter === 'metan' ? 'text-fuchsia-400' : 'text-zinc-400'}`}>{uiText.metan[lang]}</div>
+                                    </div>
+                                </div>
+                             </button>
+                        </div>
                     </div>
 
                  </div>
@@ -1108,7 +1265,7 @@ export default function App() {
                  <Share className="w-6 h-6 text-blue-400" /> 
               </div>
               <div className="flex-1">
-                 <h4 className="font-bold text-sm text-white mb-1">{uiText.iosTitle[lang]}</h4>
+                 <h4 className="font-bold text-sm text-zinc-100 mb-1">{uiText.iosTitle[lang]}</h4>
                  <p className="text-xs text-neutral-400 leading-relaxed">
                     {uiText.iosDesc[lang]}
                  </p>
@@ -1137,9 +1294,13 @@ export default function App() {
           from { transform: translateY(100%); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
         }
-        @keyframes slideDown {
-          from { transform: translateY(0); opacity: 1; }
-          to { transform: translateY(100%); opacity: 0; }
+        @keyframes expandVertical {
+          0% { clip-path: inset(50% 0 50% 0); opacity: 0; }
+          100% { clip-path: inset(0 0 0 0); opacity: 1; }
+        }
+        @keyframes collapseVertical {
+          0% { clip-path: inset(0 0 0 0); opacity: 1; }
+          100% { clip-path: inset(50% 0 50% 0); opacity: 0; }
         }
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -1153,6 +1314,12 @@ export default function App() {
         }
         .animate-slide-left {
           animation: slideInLeft 0.3s cubic-bezier(0.2, 0.0, 0.2, 1) forwards;
+        }
+        .animate-expand-vertical {
+          animation: expandVertical 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-collapse-vertical {
+          animation: collapseVertical 0.25s ease-in forwards;
         }
         .animate-overlay-enter {
           animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
