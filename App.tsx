@@ -11,16 +11,13 @@ import { CATEGORIES, VOCAB_DATA, VocabItem } from './constants';
 
 // --- Audio Helper Functions ---
 
-// Robust retry fetch helper with delay
 async function fetchWithRetry(url: string, retries = 3, delay = 500): Promise<Response> {
   for (let i = 0; i <= retries; i++) {
     try {
       const res = await fetch(url);
       if (res.ok) return res;
-      
-      // If server error or rate limit, wait before retrying
       if (i < retries) {
-        await new Promise(resolve => setTimeout(resolve, delay * (i + 1))); // Exponential-ish backoff
+        await new Promise(resolve => setTimeout(resolve, delay * (i + 1))); 
       } else {
         throw new Error(`Request failed with status ${res.status}`);
       }
@@ -32,15 +29,6 @@ async function fetchWithRetry(url: string, retries = 3, delay = 500): Promise<Re
   throw new Error("Fetch failed after retries");
 }
 
-// PCM Audio Decoding
-async function decodeAudioData(
-  arrayBuffer: ArrayBuffer,
-  ctx: AudioContext,
-): Promise<AudioBuffer> {
-  return await ctx.decodeAudioData(arrayBuffer);
-}
-
-// --- Avatar Component ---
 const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
   const isA = side === 'A';
   
@@ -67,7 +55,7 @@ const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
 
   if (cat === 'OW') {
     return (
-      <div className={`w-10 h-10 rounded-md flex items-center justify-center shadow-[0_0_10px_rgba(249,158,26,0.2)] border ${isA ? 'bg-[#f99e1a] border-white' : 'bg-[#282c34] border-[#f99e1a]'}`}>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(249,158,26,0.2)] border ${isA ? 'bg-[#f99e1a] border-white' : 'bg-[#282c34] border-[#f99e1a]'}`}>
         {isA ? <Shield className="w-5 h-5 text-[#1a1c24]" /> : <Zap className="w-5 h-5 text-[#f99e1a]" />}
       </div>
     );
@@ -128,30 +116,30 @@ const THEME_STYLES: Record<string, {
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-[#0f1923]"></div>
-        <div className="absolute top-0 right-0 w-[40%] h-full bg-[#ff4655]/10 skew-x-[-20deg] transform origin-bottom"></div>
-        <div className="absolute top-0 right-[20%] w-[5%] h-full bg-[#ff4655]/5 skew-x-[-20deg]"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+        <div className="absolute top-0 right-0 w-[60%] h-full bg-[#ff4655]/5 skew-x-[-20deg] transform origin-bottom"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[size:100%_4px] opacity-10 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,70,85,0.05)_1px,transparent_1px)] bg-[size:100px_100%] opacity-20"></div>
       </div>
     ),
-    cardClass: "rounded-none border-l-4 border-l-[#ff4655] border-y border-r border-white/10 bg-[#ece8e1]/5 hover:bg-[#ece8e1]/10 transition-all relative overflow-hidden",
+    cardClass: "rounded-none border-l-4 border-l-[#ff4655] border-y border-r border-white/10 bg-[#ece8e1]/5 hover:bg-[#ece8e1]/10 transition-all relative overflow-hidden group/card",
     cardBgContent: (
-      <div className="absolute inset-0 pointer-events-none opacity-20">
-        <div className="absolute top-0 right-0 w-20 h-full bg-[#ff4655]/20 skew-x-[-20deg]"></div>
+      <div className="absolute inset-0 pointer-events-none opacity-20 group-hover/card:opacity-30 transition-opacity">
+         <div className="absolute top-0 right-0 w-20 h-full bg-[#ff4655]/20 skew-x-[-20deg]"></div>
+         <div className="absolute bottom-0 left-0 w-full h-[1px] bg-white/20"></div>
       </div>
     ),
     accentColorClass: "text-[#ff4655]",
-    buttonClass: "bg-[#ff4655] rounded-none uppercase tracking-wider font-bold [clip-path:polygon(0_0,100%_0,100%_80%,92%_100%,0_100%)]",
+    buttonClass: "bg-[#ff4655] rounded-none uppercase tracking-wider font-bold [clip-path:polygon(0_0,100%_0,100%_80%,92%_100%,0_100%)] hover:bg-[#ff5865]",
     detailBgClass: "bg-[#0f1923]"
   },
   APEX: {
     bgClass: "bg-[#1a0b0b]",
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-[450px] bg-[url('https://images.unsplash.com/photo-1533236897111-3e94666b2752?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
         <div className="absolute top-0 left-0 w-full h-[451px] bg-gradient-to-b from-[#da292a]/10 via-[#1a0b0b]/80 to-[#1a0b0b]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#a33838_0%,transparent_70%)] opacity-20"></div>
-        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(transparent_0%,#000_100%),repeating-linear-gradient(45deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_1px,transparent_1px,transparent_10px)]"></div>
         <div className="absolute top-0 right-0 w-[200px] h-full border-l border-red-500/10 skew-x-[-15deg]"></div>
+        <div className="absolute bottom-0 left-[-50px] w-[300px] h-[300px] bg-red-900/20 blur-[100px]"></div>
       </div>
     ),
     cardClass: "skew-x-[-6deg] border-l-4 border-l-[#da292a] border-y border-r border-red-500/10 bg-gradient-to-br from-neutral-900/90 to-neutral-950/90 hover:border-l-[#ff4e4e] hover:from-red-900/20 backdrop-blur-sm transition-all relative overflow-hidden",
@@ -159,26 +147,25 @@ const THEME_STYLES: Record<string, {
       <div className="absolute inset-0 pointer-events-none opacity-30 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#000_10px,#000_11px)]"></div>
     ),
     accentColorClass: "text-[#ff4e4e]",
-    buttonClass: "bg-[#da292a] skew-x-[-10deg] border-b-4 border-[#8e0e0e] font-bold tracking-tighter uppercase",
+    buttonClass: "bg-[#da292a] skew-x-[-10deg] border-b-4 border-[#8e0e0e] font-bold tracking-tighter uppercase hover:bg-[#f03a3b]",
     detailBgClass: "bg-[#1a0b0b]"
   },
   OW: {
-    bgClass: "bg-[#131519]",
+    bgClass: "bg-[#181a20]",
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-[450px] bg-[url('https://images.unsplash.com/photo-1505424297051-c3ad50b71303?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-30 mix-blend-overlay"></div>
-        <div className="absolute top-0 left-0 w-full h-[451px] bg-gradient-to-b from-[#f99e1a]/10 via-[#131519]/80 to-[#131519]"></div>
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[600px] h-[350px] bg-[radial-gradient(ellipse_at_top,rgba(249,158,26,0.15)_0%,transparent_70%)] blur-[70px]"></div>
-        <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(circle_at_center,white_1.5px,transparent_1.5px)] bg-[size:30px_30px]"></div>
+        <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-[#f99e1a]/10 via-[#181a20] to-[#181a20]"></div>
+        <div className="absolute top-[-100px] right-[-100px] w-[500px] h-[500px] bg-[#f99e1a]/5 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px] opacity-20"></div>
       </div>
     ),
-    cardClass: "rounded-sm border-l-4 border-l-[#f99e1a] border-y border-r border-white/10 bg-[#1e2128] hover:bg-[#252932] hover:border-white/25 transition-all italic relative overflow-hidden shadow-md",
+    cardClass: "rounded-xl border-l-4 border-l-[#f99e1a] border-y border-r border-white/10 bg-[#22252e] hover:bg-[#2b2f3a] transition-all shadow-sm relative overflow-hidden group",
     cardBgContent: (
-       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+       <div className="absolute inset-0 bg-gradient-to-r from-[#f99e1a]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
     ),
-    accentColorClass: "text-[#f99e1a] font-bold drop-shadow-sm",
-    buttonClass: "bg-[#f99e1a] hover:bg-[#ffb03b] text-[#131519] rounded-sm italic font-black tracking-widest uppercase shadow-[0_0_20px_rgba(249,158,26,0.25)] transition-all transform hover:-translate-y-0.5 border-none",
-    detailBgClass: "bg-[#131519]"
+    accentColorClass: "text-[#f99e1a] font-bold",
+    buttonClass: "bg-[#f99e1a] hover:bg-[#ffaa33] text-[#16171d] rounded-xl font-bold shadow-[0_4px_15px_-5px_rgba(249,158,26,0.4)] transition-all transform hover:-translate-y-0.5",
+    detailBgClass: "bg-[#181a20]"
   }
 };
 
@@ -191,12 +178,10 @@ export default function App() {
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [animClass, setAnimClass] = useState('animate-enter');
 
-  // New State for features
   const [isMaskMode, setIsMaskMode] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [selectedGender, setSelectedGender] = useState<'female' | 'male'>('female');
   
-  // Voice Engine State: Persist preference in localStorage, default to TRUE (VOICEVOX)
   const [useVoicevox, setUseVoicevox] = useState(() => {
       try {
           const saved = localStorage.getItem('jpgamer_use_voicevox');
@@ -206,19 +191,15 @@ export default function App() {
       }
   });
 
-  // Save voice preference whenever it changes
   useEffect(() => {
       localStorage.setItem('jpgamer_use_voicevox', JSON.stringify(useVoicevox));
   }, [useVoicevox]);
 
   const [isAiLoading, setIsAiLoading] = useState(false); 
   
-  // Audio Context for AI Voice
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Store filtered voice objects
   const [availableVoices, setAvailableVoices] = useState<{male: SpeechSynthesisVoice | null, female: SpeechSynthesisVoice | null}>({ male: null, female: null });
-  // Ref to prevent garbage collection of utterance during playback
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -299,10 +280,10 @@ export default function App() {
 
   // Swipe logic
   const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchStartY, setTouchStartY] = useState<number | null>(null); // New: Track Y for slope check
+  const [touchStartY, setTouchStartY] = useState<number | null>(null); 
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [touchEndY, setTouchEndY] = useState<number | null>(null); // New: Track Y for slope check
-  const minSwipeDistance = 60; // Increased threshold slightly
+  const [touchEndY, setTouchEndY] = useState<number | null>(null); 
+  const minSwipeDistance = 80;
 
   const currentTheme = THEME_STYLES[activeTab] || THEME_STYLES['LIFE'];
   const detailTheme = selectedItem ? (THEME_STYLES[selectedItem.cat] || THEME_STYLES['LIFE']) : currentTheme;
@@ -324,7 +305,6 @@ export default function App() {
     });
   }, [activeTab, searchTerm, showFavorites, favorites, lang, getLocalizedText]);
 
-  // Audio "Warmup" for iOS
   useEffect(() => {
     const unlockAudio = () => {
         if (!audioContextRef.current) {
@@ -332,19 +312,16 @@ export default function App() {
             audioContextRef.current = new AudioContext();
         }
         
-        // Resume if suspended (common in iOS)
         if (audioContextRef.current.state === 'suspended') {
             audioContextRef.current.resume();
         }
 
-        // Create a silent buffer and play it to "warm up" the audio engine
         const buffer = audioContextRef.current.createBuffer(1, 1, 22050);
         const source = audioContextRef.current.createBufferSource();
         source.buffer = buffer;
         source.connect(audioContextRef.current.destination);
         source.start(0);
 
-        // Remove listener after first interaction
         window.removeEventListener('click', unlockAudio);
         window.removeEventListener('touchstart', unlockAudio);
     };
@@ -465,8 +442,7 @@ export default function App() {
     const distanceX = touchStart - touchEnd;
     const distanceY = touchStartY - touchEndY;
     
-    // Critical: Check slope. If vertical movement > horizontal movement, it's a scroll, not a swipe.
-    if (Math.abs(distanceY) > Math.abs(distanceX)) {
+    if (Math.abs(distanceY) > Math.abs(distanceX) * 0.5) {
         return; 
     }
 
@@ -478,11 +454,9 @@ export default function App() {
         if (currentIndex === -1) return;
 
         if (isLeftSwipe) {
-            const currentIndex = CATEGORIES.findIndex(c => c.id === activeTab);
             const nextIndex = (currentIndex + 1) % CATEGORIES.length;
             handleTabChange(CATEGORIES[nextIndex].id);
         } else {
-            const currentIndex = CATEGORIES.findIndex(c => c.id === activeTab);
             const prevIndex = (currentIndex - 1 + CATEGORIES.length) % CATEGORIES.length;
             handleTabChange(CATEGORIES[prevIndex].id);
         }
@@ -492,9 +466,7 @@ export default function App() {
   const handleVisualClose = useCallback(() => {
     window.speechSynthesis.cancel();
     if (audioContextRef.current) {
-        // Don't close context on visual close, keep it alive for re-use
-        // audioContextRef.current.close().catch(() => {});
-        // audioContextRef.current = null;
+        // Keep context alive
     }
     setIsDetailClosing(true);
     setTimeout(() => {
@@ -524,49 +496,34 @@ export default function App() {
   };
 
   const preprocessTextForTTS = (text: string) => {
-    // Replace 'ha' with 'wa' only when it serves as a topic marker particle
     return text
-        // Pronouns & common nouns followed by 'ha'
         .replace(/([俺私僕君彼彼女敵服場今日明日発言人推し])は/g, '$1わ')
-        // Demonstratives followed by 'ha'
         .replace(/(これ|それ|あれ|どこ|ここ|そこ|あそこ)は/g, '$1わ')
-        // Common grammatical patterns
         .replace(/のでは/g, 'のでわ')
         .replace(/ては/g, 'てわ')
         .replace(/では/g, 'でわ')
-        // Specific phrases in dataset known to fail on some engines
         .replace(/逃げ場は/g, '逃げ場わ')
         .replace(/俺は/g, '俺わ')
         .replace(/午後は/g, '午後わ');
   };
 
-  // --- VOICEVOX Multi-Turn Dialogue ---
   const playVoicevoxAudio = async (text: string, id: string) => {
       setPlayingId(id);
       setIsAiLoading(true);
-
-      // Determine Speakers
-      // 3 = Zundamon (Female-ish/Cute)
-      // 13 = Aoyama Ryusei (Male/Cool)
       
       const primaryId = selectedGender === 'female' ? 3 : 13;
-      // If primary is female (Zundamon), secondary is male (Aoyama).
-      // If primary is male (Aoyama), secondary is female (Zundamon).
       const secondaryId = selectedGender === 'female' ? 13 : 3;
 
       const lines = text.split('\n').filter(l => l.trim() !== '');
       const audioQueue: { text: string, speakerId: number }[] = [];
 
       for (const line of lines) {
-          // Remove translations in parens (both half and full width)
           const cleanLine = line.replace(/[\(（].*?[\)）]/g, '').trim();
           if (!cleanLine) continue;
 
-          // Check if line starts with A: or B:
           const match = cleanLine.match(/^([ABＡＢ][:：]?\s*)(.*)/i);
           
           if (match) {
-              // It's a dialogue line
               const prefix = match[1];
               const spokenText = match[2];
               const isB = prefix.toUpperCase().includes('B') || prefix.includes('Ｂ');
@@ -578,7 +535,6 @@ export default function App() {
                   });
               }
           } else {
-              // Not a marked dialogue, treat as primary speaker (e.g. single sentence)
               audioQueue.push({
                   text: cleanLine,
                   speakerId: primaryId
@@ -593,7 +549,6 @@ export default function App() {
       }
 
       try {
-          // Check context state again before playing
           if (!audioContextRef.current) {
                const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
                audioContextRef.current = new AudioContext();
@@ -602,64 +557,67 @@ export default function App() {
               await audioContextRef.current.resume();
           }
 
-          // SEQUENTIAL Fetching to avoid API Rate Limits
-          const audioBuffers: AudioBuffer[] = [];
-          
-          for (const item of audioQueue) {
-              const url = `https://api.tts.quest/v3/voicevox/synthesis?text=${encodeURIComponent(item.text)}&speaker=${item.speakerId}`;
-              
-              // Use fetchWithRetry helper
-              const response = await fetchWithRetry(url);
-              
-              const data = await response.json();
-              if (!data.mp3StreamingUrl) throw new Error("No URL returned from API");
-              
-              const audioRes = await fetchWithRetry(data.mp3StreamingUrl);
-              const arrayBuffer = await audioRes.arrayBuffer();
-              
-              if (audioContextRef.current) {
-                  const buffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
-                  audioBuffers.push(buffer);
-              }
-          }
-          
-          setIsAiLoading(false);
-
-          // Play them sequentially
-          let startTime = audioContextRef.current.currentTime;
-          
-          // Add a small buffer for safety
-          if (startTime < 0) startTime = 0;
-          
-          audioBuffers.forEach((buffer, index) => {
-              if (!audioContextRef.current) return;
-              
-              const source = audioContextRef.current.createBufferSource();
-              source.buffer = buffer;
-              source.playbackRate.value = playbackSpeed;
-              source.connect(audioContextRef.current.destination);
-              
-              source.start(startTime);
-              
-              // Add duration + small gap (0.1s) to start time for next clip
-              // Need to account for playbackSpeed in duration calculation
-              const effectiveDuration = buffer.duration / playbackSpeed;
-              startTime += effectiveDuration + 0.1;
-
-              // If it's the last one, reset playing state after it ends
-              if (index === audioBuffers.length - 1) {
-                  source.onended = () => {
-                      setPlayingId(null);
-                  };
+          // Use parallel requests instead of sequential for faster load time
+          const audioPromises = audioQueue.map(async (item) => {
+              try {
+                  const url = `https://api.tts.quest/v3/voicevox/synthesis?text=${encodeURIComponent(item.text)}&speaker=${item.speakerId}`;
+                  const response = await fetchWithRetry(url);
+                  const data = await response.json();
+                  if (!data.mp3StreamingUrl) throw new Error("No URL returned from API");
+                  
+                  const audioRes = await fetchWithRetry(data.mp3StreamingUrl);
+                  const arrayBuffer = await audioRes.arrayBuffer();
+                  
+                  if (audioContextRef.current) {
+                      return await audioContextRef.current.decodeAudioData(arrayBuffer);
+                  }
+                  return null;
+              } catch (e) {
+                  console.warn("Audio fetch failed for item", item.text, e);
+                  return null;
               }
           });
+          
+          // Play buffers sequentially as they resolve
+          let nextStartTime = audioContextRef.current.currentTime + 0.1;
+          
+          for (let i = 0; i < audioPromises.length; i++) {
+              // Wait for the specific index to be ready
+              const buffer = await audioPromises[i];
+              
+              // As soon as the first clip is ready, stop the loading spinner
+              if (i === 0) setIsAiLoading(false);
+
+              if (buffer && audioContextRef.current) {
+                  const source = audioContextRef.current.createBufferSource();
+                  source.buffer = buffer;
+                  source.playbackRate.value = playbackSpeed;
+                  source.connect(audioContextRef.current.destination);
+                  
+                  // Ensure we don't start in the past if network lagged
+                  const now = audioContextRef.current.currentTime;
+                  const startTime = Math.max(nextStartTime, now);
+                  
+                  source.start(startTime);
+                  
+                  const effectiveDuration = buffer.duration / playbackSpeed;
+                  // Reduce gap to 0.05s for snappier dialogue
+                  nextStartTime = startTime + effectiveDuration + 0.05;
+
+                  if (i === audioPromises.length - 1) {
+                      source.onended = () => {
+                          setPlayingId(null);
+                      };
+                  }
+              } else if (i === audioPromises.length - 1) {
+                  setPlayingId(null);
+              }
+          }
 
       } catch (error) {
           console.error("VOICEVOX Error:", error);
-          // Silent fallback to browser voice to not annoy user
           handleBrowserPlay(text, id);
       } finally {
-          // If error happened, loading is already false, but safe to set here if async not finished
           if (isAiLoading) setIsAiLoading(false);
       }
   };
@@ -721,10 +679,8 @@ export default function App() {
   };
 
   const handlePlay = (text: string, id: string) => {
-      // 1. Stop existing playback
       window.speechSynthesis.cancel();
       
-      // 2. Initialize or Resume AudioContext IMMEDIATELY on User Gesture (Critical for iOS)
       if (!audioContextRef.current) {
           const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
           audioContextRef.current = new AudioContext();
@@ -760,11 +716,11 @@ export default function App() {
           const bubbleStyle = isB 
             ? category === 'VALORANT' ? 'bg-[#ff4655] rounded-none [clip-path:polygon(0_0,100%_0,100%_100%,10%_100%,0_85%)]'
               : category === 'APEX' ? 'bg-[#da292a] skew-x-[-10deg]'
-              : category === 'OW' ? 'bg-[#f99e1a] text-[#131519] rounded-sm italic border-l-2 border-white/50'
+              : category === 'OW' ? 'bg-[#f99e1a] text-[#131519] rounded-xl rounded-br-sm'
               : 'bg-gradient-to-br from-fuchsia-600 to-indigo-600 rounded-xl rounded-br-sm'
             : category === 'VALORANT' ? 'bg-[#1c252e] border border-white/10 rounded-none'
               : category === 'APEX' ? 'bg-[#2a2a2a] border border-white/10 skew-x-[-10deg]'
-              : category === 'OW' ? 'bg-[#1e2128] border border-white/10 rounded-sm italic'
+              : category === 'OW' ? 'bg-[#1e2128] border border-white/10 rounded-xl rounded-bl-sm'
               : 'bg-[#18181b] border border-white/10 rounded-xl rounded-bl-sm';
 
           return (
@@ -829,7 +785,6 @@ export default function App() {
              </div>
              <div className="flex items-center gap-2">
                  
-                 {/* --- Language Selector --- */}
                  <div className="relative z-50 h-9 flex items-center justify-end">
                      {showLangMenu && (
                          <div 
@@ -934,7 +889,7 @@ export default function App() {
         </div>
       </div>
 
-      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-52 pb-40 relative z-10 safe-pt">
+      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-[calc(13rem+env(safe-area-inset-top))] pb-40 relative z-10 safe-pb">
         <div key={activeTab + (showFavorites ? '-fav' : '') + lang} className={`space-y-3 ${animClass}`}>
           {filteredData.length > 0 ? (
             filteredData.map((item) => {
@@ -952,7 +907,7 @@ export default function App() {
                 {activeTab === 'ALL' ? THEME_STYLES['ALL'].cardBgContent : currentTheme.cardBgContent}
                 
                 <div className={`flex-1 min-w-0 pr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
-                  <h3 className={`font-bold text-base text-white mb-1 truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'italic' : ''}`}>
+                  <h3 className={`font-bold text-base text-white mb-1 truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'not-italic' : ''}`}>
                       {displayMeaning}
                   </h3>
                   <div className="flex items-center gap-2">
@@ -990,7 +945,7 @@ export default function App() {
           <div className={`w-full max-w-md flex flex-col h-[100dvh] pointer-events-auto shadow-2xl relative overflow-hidden ${detailTheme.detailBgClass} ${isDetailClosing ? 'animate-overlay-exit' : 'animate-overlay-enter'}`}>
             {detailTheme.bgOverlay}
             
-            <div className="px-4 py-4 flex items-center justify-between bg-black/40 backdrop-blur-md sticky top-0 z-50 border-b border-white/5 pt-[env(safe-area-inset-top,20px)]">
+            <div className="absolute top-0 left-0 right-0 px-4 py-4 flex items-center justify-between bg-black/40 backdrop-blur-md z-50 border-b border-white/5 pt-[env(safe-area-inset-top,20px)]">
                 <button onClick={closeDetail} className="p-2 -ml-2 text-neutral-400 hover:text-white transition-colors rounded-full hover:bg-white/10">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
@@ -1010,7 +965,7 @@ export default function App() {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-64 safe-pb">
+            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-64 pt-[calc(5rem+env(safe-area-inset-top))] safe-pb">
                 <div className="px-6 pt-8 pb-6 text-center border-b border-white/5 relative">
                     <div className="absolute top-0 left-0 w-full h-[300px] z-0 overflow-hidden pointer-events-none">
                         <div className={`w-full h-full relative flex items-center justify-center overflow-hidden`}>
@@ -1028,7 +983,7 @@ export default function App() {
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] to-transparent"></div>
                     </div>
 
-                    <h1 className={`text-3xl font-black text-white mb-2 leading-tight drop-shadow-lg relative z-10 ${selectedItem.cat === 'OW' ? 'italic' : ''} ${selectedItem.cat === 'APEX' ? 'uppercase' : ''}`}>
+                    <h1 className={`text-3xl font-black text-white mb-2 leading-tight drop-shadow-lg relative z-10 ${selectedItem.cat === 'OW' ? 'not-italic' : ''} ${selectedItem.cat === 'APEX' ? 'uppercase' : ''}`}>
                         {getLocalizedText(selectedItem, 'meaning')}
                     </h1>
                     
@@ -1078,13 +1033,10 @@ export default function App() {
                 </div>
             </div>
 
-            {/* Permanent Bottom Voice Control Bar */}
             <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0c]/90 backdrop-blur-md border-t border-white/10 z-50 safe-pb pb-[env(safe-area-inset-bottom)]">
                  <div className="px-4 py-3 space-y-3">
                     
-                    {/* Character Selection */}
                     <div className="grid grid-cols-2 gap-3">
-                         {/* Female Character (Zundamon) */}
                          <button
                             onClick={() => setSelectedGender('female')}
                             className={`relative h-14 rounded-xl border transition-all overflow-hidden group ${selectedGender === 'female' ? 'bg-fuchsia-900/40 border-fuchsia-500/50 shadow-[0_0_15px_-3px_rgba(217,70,239,0.3)]' : 'bg-neutral-800/40 border-white/5 hover:bg-white/5'}`}
@@ -1101,7 +1053,6 @@ export default function App() {
                             {selectedGender === 'female' && <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-bl from-fuchsia-500/20 to-transparent"></div>}
                          </button>
 
-                         {/* Male Character (Aoyama) */}
                          <button
                             onClick={() => setSelectedGender('male')}
                             className={`relative h-14 rounded-xl border transition-all overflow-hidden group ${selectedGender === 'male' ? 'bg-cyan-900/40 border-cyan-500/50 shadow-[0_0_15px_-3px_rgba(6,182,212,0.3)]' : 'bg-neutral-800/40 border-white/5 hover:bg-white/5'}`}
@@ -1119,7 +1070,6 @@ export default function App() {
                          </button>
                     </div>
 
-                    {/* Controls Row */}
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex-1 flex bg-neutral-900/50 rounded-lg p-1 border border-white/5">
                             {[0.5, 0.75, 1.0].map(s => (
