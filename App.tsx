@@ -1102,7 +1102,8 @@ export default function App() {
                      width: `${100 / CATEGORIES.length}%`,
                      // CSS Optimization: Tells browser to skip rendering off-screen content work
                      contentVisibility: 'auto',
-                     containIntrinsicSize: '1px 5000px'
+                     containIntrinsicSize: '1px 5000px',
+                     WebkitOverflowScrolling: 'touch' // Enable momentum scrolling on iOS
                  }}
                >
                  {/* Category Title Header - Moves with slide */}
@@ -1250,7 +1251,10 @@ export default function App() {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-[280px]">
+            <div 
+                className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-[280px]"
+                style={{ WebkitOverflowScrolling: 'touch' }} // Enable momentum scrolling on iOS
+            >
                 {/* HERO SECTION */}
                 <div className="px-6 pt-[calc(6rem+env(safe-area-inset-top))] pb-8 text-center relative">
                      {/* Term (Japanese) - Playable Hero */}
