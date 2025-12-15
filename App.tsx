@@ -642,7 +642,14 @@ export default function App() {
     if (sliderRef.current) {
         sliderRef.current.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
         sliderRef.current.style.willChange = 'auto'; // release memory
-        sliderRef.current.style.transform = ''; 
+        
+        // Critical Fix: Explicitly set transform to target position instead of clearing it.
+        // Clearing it with '' removes the inline style and resets to 0 (ALL category) because React
+        // state hasn't changed if we are staying on the same tab.
+        const targetIndex = CATEGORIES.findIndex(c => c.id === newTabId);
+        const categoryCount = CATEGORIES.length;
+        const offsetPct = -(targetIndex * (100 / categoryCount));
+        sliderRef.current.style.transform = `translateX(${offsetPct}%)`;
     }
     
     if (newTabId !== activeTab) {
