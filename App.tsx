@@ -8,7 +8,7 @@ import {
   EyeOff, Settings2, Check, Mic2, Radio, Loader2, Leaf, Music2, Cpu, Menu,
   Languages, Type, Wifi, Signal, ChevronDown, Backpack, Activity
 } from 'lucide-react';
-import { CATEGORIES, VOCAB_DATA, VocabItem, ValorantLogo, ApexLogo, OWLogo } from './constants';
+import { CATEGORIES, VOCAB_DATA, VocabItem, ValorantLogo, ApexLogo, OWLogo, SCENE_TAGS } from './constants';
 
 // --- Audio Helper Functions ---
 
@@ -237,11 +237,22 @@ const VocabCard = React.memo(({ item, catId, theme, isMaskMode, favorites, toggl
                         {displayMeaning}
                     </h3>
                 </div>
-                <p className={`text-[13px] font-normal text-zinc-500 truncate font-mono flex items-center gap-2 group-hover:text-zinc-400 transition-colors`}>
-                    <span className="text-zinc-400">{item.term}</span>
-                    {item.kana !== item.term && <span className="opacity-50">•</span>}
-                    {item.kana !== item.term && <span>{item.kana}</span>}
-                </p>
+                <div className="flex items-center gap-2">
+                    <p className={`text-[13px] font-normal text-zinc-500 truncate font-mono flex items-center gap-2 group-hover:text-zinc-400 transition-colors`}>
+                        <span className="text-zinc-400">{item.term}</span>
+                        {item.kana !== item.term && <span className="opacity-50">•</span>}
+                        {item.kana !== item.term && <span>{item.kana}</span>}
+                    </p>
+                    
+                    {/* Stars Display */}
+                    {item.stars && item.stars > 0 && (
+                        <div className="flex gap-0.5 ml-auto opacity-60">
+                            {Array.from({ length: item.stars }).map((_, i) => (
+                                <Star key={i} className="w-2.5 h-2.5 fill-yellow-500 text-yellow-500" />
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Right: Backpack (Favorite) Button */}
@@ -260,6 +271,7 @@ const VocabCard = React.memo(({ item, catId, theme, isMaskMode, favorites, toggl
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('ALL'); 
+  const [activeScene, setActiveScene] = useState<string>('ALL'); // NEW: Scene Filter State
   const [selectedItem, setSelectedItem] = useState<VocabItem | null>(null); 
   const [searchTerm, setSearchTerm] = useState("");
   const [isOnline, setIsOnline] = useState(true);
@@ -383,7 +395,8 @@ export default function App() {
       description: { cn: "备注", tw: "備註", hk: "備註" },
       example: { cn: "场景例句", tw: "場景例句", hk: "場景例句" },
       zundamon: { cn: "尊达萌", tw: "尊達萌", hk: "尊達萌" },
-      metan: { cn: "四国梅坦", tw: "四國梅坦", hk: "四國梅坦" }
+      metan: { cn: "四国梅坦", tw: "四國梅坦", hk: "四國梅坦" },
+      allScenes: { cn: "全部", tw: "全部", hk: "全部" }
   };
 
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -419,11 +432,18 @@ export default function App() {
           item.romaji.toLowerCase().includes(lowerSearch);
         
         const matchesFavorite = showFavorites ? favorites.includes(item.id) : true;
-        return matchesCategory && matchesSearch && matchesFavorite;
+        
+        // Scene Tag Filter Logic
+        let matchesScene = true;
+        if (cat.id !== 'ALL' && activeScene !== 'ALL') {
+             matchesScene = !!item.tags?.includes(activeScene);
+        }
+
+        return matchesCategory && matchesSearch && matchesFavorite && matchesScene;
       });
     });
     return data;
-  }, [searchTerm, showFavorites, favorites, lang, getLocalizedText]);
+  }, [searchTerm, showFavorites, favorites, lang, getLocalizedText, activeScene]);
 
   const activeCategoryName = useMemo(() => {
     const cat = CATEGORIES.find(c => c.id === activeTab);
@@ -535,6 +555,7 @@ export default function App() {
   const handleTabChange = (newTabId: string) => {
     if (newTabId === activeTab) return;
     setActiveTab(newTabId);
+    setActiveScene('ALL'); // Reset scene filter on tab change
     // Reset scroll for the new tab (optional, but good for navigation feeling)
     const el = document.getElementById(`scroll-container-${newTabId}`);
     if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1092,6 +1113,13 @@ export default function App() {
              // Resolve theme for this specific column. 'ALL' has special logic, others rely on ID or default to LIFE
              const catTheme = cat.id === 'ALL' ? THEME_STYLES['ALL'] : (THEME_STYLES[cat.id] || THEME_STYLES['LIFE']);
              const catName = lang === 'cn' ? cat.name : (lang === 'hk' ? (cat.name_hk || cat.name_tw) : cat.name_tw);
+             const sceneTags = SCENE_TAGS[cat.id] || [];
+
+             // Active Theme Color for Tags
+             const tagActiveClass = cat.id === 'VALORANT' ? 'bg-[#ff4655] text-white' 
+                : cat.id === 'APEX' ? 'bg-[#da292a] text-white' 
+                : cat.id === 'OW' ? 'bg-[#f99e1a] text-black' 
+                : 'bg-fuchsia-500 text-white';
 
              return (
                <div 
@@ -1107,12 +1135,41 @@ export default function App() {
                  }}
                >
                  {/* Category Title Header - Moves with slide */}
-                 <div className="mb-6 mt-4 pl-2">
+                 <div className="mb-4 mt-4 pl-2">
                      <h2 className="text-[18px] font-semibold text-zinc-50 inline-block relative pb-1">
                          {showFavorites ? uiText.favorite[lang] : catName}
                          <div className={`absolute bottom-0 left-0 right-0 h-[1px] ${catTheme.underlineColor}`}></div>
                      </h2>
                  </div>
+                 
+                 {/* NEW: Horizontal Scene Filter (Tags) - Only show if not ALL and not Favorites */}
+                 {cat.id !== 'ALL' && !showFavorites && (
+                     <div className="flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-2 mask-linear-fade">
+                         <button
+                            onClick={() => setActiveScene('ALL')}
+                            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                                activeScene === 'ALL' 
+                                ? tagActiveClass + ' border-transparent shadow-lg' 
+                                : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                            }`}
+                         >
+                            {uiText.allScenes[lang]}
+                         </button>
+                         {sceneTags.map(tag => (
+                             <button
+                                key={tag.id}
+                                onClick={() => setActiveScene(tag.id)}
+                                className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                                    activeScene === tag.id 
+                                    ? tagActiveClass + ' border-transparent shadow-lg' 
+                                    : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                                }`}
+                             >
+                                {lang === 'cn' ? tag.label : (lang === 'hk' ? tag.label_hk : tag.label_tw)}
+                             </button>
+                         ))}
+                     </div>
+                 )}
 
                  {/* List - Virtualized */}
                  <div className="space-y-0"> {/* Removed vertical spacing for flat list */}
@@ -1206,18 +1263,23 @@ export default function App() {
                             activeTab === cat.id ? 'opacity-100 scale-110' : 'opacity-50 hover:opacity-80 scale-100'
                         }`}
                       >
-                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all border ${
-                             activeTab === cat.id 
-                                ? `bg-white/10 border-white/20 shadow-lg backdrop-blur-md` 
-                                : 'bg-transparent border-transparent group-hover:bg-white/5'
-                         }`}>
-                             <div className={`${activeTab === cat.id ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`}>
-                                {cat.icon}
-                             </div>
-                         </div>
-                         <span className={`text-[9px] font-bold tracking-wide ${activeTab === cat.id ? 'text-zinc-100' : 'text-neutral-400'}`}>
-                             {cat.id === 'LIFE' ? uiText.lifeCat[lang] : (lang === 'cn' ? cat.name : (lang === 'hk' ? (cat.name_hk || cat.name_tw) : cat.name_tw))}
-                         </span>
+                        <div className={`p-2 rounded-xl transition-all duration-300 ${
+                             activeTab === cat.id ? 'bg-zinc-100 text-black shadow-lg shadow-white/20' : 'bg-transparent text-zinc-400 group-hover:text-zinc-200'
+                        }`}>
+                             {cat.icon}
+                        </div>
+                        <span className={`text-[9px] font-bold tracking-wider ${activeTab === cat.id ? 'text-zinc-100' : 'text-zinc-500'}`}>
+                            {cat.id === 'ALL' ? 'HOME' : cat.id}
+                        </span>
+                        {/* Active Indicator Dot */}
+                        {activeTab === cat.id && (
+                             <div className={`w-1 h-1 rounded-full mt-0.5 ${
+                                 activeTab === 'VALORANT' ? 'bg-[#ff4655]' : 
+                                 activeTab === 'APEX' ? 'bg-[#da292a]' :
+                                 activeTab === 'OW' ? 'bg-[#f99e1a]' : 
+                                 'bg-white'
+                             }`}></div>
+                        )}
                       </button>
                     ))}
                  </div>
@@ -1225,296 +1287,166 @@ export default function App() {
          </div>
       </div>
 
+      {/* --- DETAIL VIEW OVERLAY --- */}
       {selectedItem && (
-        <div className="fixed inset-0 z-50 flex justify-center pointer-events-none">
-          {/* Main Detail Container */}
-          <div className={`w-full max-w-md flex flex-col h-[100dvh] pointer-events-auto shadow-2xl relative overflow-hidden ${detailTheme.detailBgClass} ${isDetailClosing ? 'animate-collapse-vertical' : 'animate-expand-vertical'}`}>
-            {/* Ambient Background Overlay (Preserves context) */}
-            {detailTheme.bgOverlay}
-            
-            {/* Detail Top Controls (Floating) */}
-            <div className="fixed top-0 left-0 right-0 p-4 pt-[calc(env(safe-area-inset-top)+1rem)] flex justify-between z-50 pointer-events-none max-w-md mx-auto">
-                <button
-                    onClick={closeDetail}
-                    className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 text-zinc-100 shadow-xl active:scale-95 transition-all hover:bg-black/60"
-                >
-                    <ChevronLeft className="w-6 h-6 -ml-0.5" />
-                </button>
+        <div 
+          className={`fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 animate-fade-in-up duration-200 ${isDetailClosing ? 'opacity-0 translate-y-full' : 'opacity-100 translate-y-0'} transition-all`}
+          style={{ transitionDuration: '300ms' }}
+        >
+          {/* Backdrop Blur */}
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+            onClick={handleVisualClose}
+          ></div>
 
-                <div className="flex gap-2">
-                    <button 
-                        onClick={(e) => { triggerHaptic(); toggleFavorite(e, selectedItem.id); }}
-                        className={`pointer-events-auto w-12 h-12 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl active:scale-95 transition-all hover:bg-black/60 ${favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-neutral-200'}`}
-                    >
-                        <Backpack className={`w-6 h-6 ${favorites.includes(selectedItem.id) ? 'fill-current' : ''}`} />
-                    </button>
-                </div>
-            </div>
+          {/* Modal Content */}
+          <div 
+            className={`w-full max-w-md h-[85vh] sm:h-auto sm:max-h-[80vh] ${detailTheme.detailBgClass} border border-white/10 sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col relative overflow-hidden`}
+          >
+              {/* Top Banner Background */}
+              <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
 
-            <div 
-                className="flex-1 overflow-y-auto no-scrollbar relative z-10 overscroll-contain pb-[280px]"
-                style={{ WebkitOverflowScrolling: 'touch' }} // Enable momentum scrolling on iOS
-            >
-                {/* HERO SECTION */}
-                <div className="px-6 pt-[calc(6rem+env(safe-area-inset-top))] pb-8 text-center relative">
-                     {/* Term (Japanese) - Playable Hero */}
-                     <button 
-                        onClick={() => handlePlay(selectedItem.kana || selectedItem.term, 'term')}
-                        className={`group/term relative z-10 flex items-center justify-center gap-3 mx-auto transition-all active:scale-[0.98] cursor-pointer mb-1`}
-                    >
-                        <h1 className={`text-5xl font-black tracking-tight drop-shadow-xl ${detailTheme.accentColorClass} ${selectedItem.cat === 'VALORANT' ? 'uppercase' : ''} ${selectedItem.cat === 'APEX' ? 'italic skew-x-[-6deg]' : ''}`}>
-                            {selectedItem.term}
-                        </h1>
-                        
-                        {/* Audio Icon - Explicitly styled as requested */}
-                        <div className={`${detailTheme.accentColorClass} ${playingId === 'term' ? 'opacity-100' : 'opacity-70 group-hover/term:opacity-100'} transition-opacity`}>
-                             {playingId === 'term' && isAiLoading && useVoicevox ? (
-                                 <Loader2 className="w-6 h-6 animate-spin" />
-                             ) : (
-                                 <div className="relative">
-                                    <Mic2 className="w-6 h-6" />
-                                    {playingId === 'term' && (
-                                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
-                                        </span>
-                                    )}
-                                 </div>
-                             )}
-                        </div>
-                    </button>
+              {/* Close Button */}
+              <div className="absolute top-4 right-4 z-20">
+                  <button 
+                      onClick={handleVisualClose}
+                      className="w-10 h-10 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 hover:bg-white/10 active:scale-95 transition-all text-zinc-200 shadow-lg"
+                  >
+                      <X className="w-5 h-5" />
+                  </button>
+              </div>
 
-                    {/* Meaning (Native) - Subtitle */}
-                    <p className={`text-xl font-medium text-zinc-300 leading-tight mb-4 drop-shadow-md ${selectedItem.cat === 'OW' ? 'not-italic' : ''}`}>
-                        {getLocalizedText(selectedItem, 'meaning')}
-                    </p>
-                    
-                    {/* Meta Data Pill */}
-                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm text-sm font-mono text-zinc-400">
-                        <span>{selectedItem.kana}</span>
-                        <span className="text-zinc-600">•</span>
-                        <span>{selectedItem.romaji}</span>
-                    </div>
+              {/* Content Scroll Area */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar p-6 pt-12 relative z-10">
+                  
+                  {/* Header Section */}
+                  <div className="text-center mb-8 relative">
+                      {/* Category Icon */}
+                      <div className="flex justify-center mb-4">
+                           <div className="scale-125">
+                                <GlassListIcon cat={selectedItem.cat} />
+                           </div>
+                      </div>
 
-                    {/* Description Card */}
-                    <div className={`mt-6 w-full p-5 border border-white/10 backdrop-blur-md shadow-lg relative overflow-hidden group hover:border-white/20 transition-all ${
-                        selectedItem.cat === 'VALORANT' ? 'bg-[#0f1923]/80 rounded-none border-l-4 border-l-[#ff4655]' : 
-                        selectedItem.cat === 'APEX' ? 'bg-[#1a0b0b]/80 skew-x-[-3deg] border-r-4 border-r-[#da292a]' : 
-                        'bg-black/40 rounded-2xl'
-                    }`}>
-                        <div className="absolute top-0 right-0 p-3 opacity-20">
-                            <GlassListIcon cat={selectedItem.cat} />
-                        </div>
-                        <div className={`relative z-10 text-left ${selectedItem.cat === 'APEX' ? 'skew-x-[3deg]' : ''}`}>
-                            <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1">{uiText.description[lang]}</div>
-                            <p className="text-sm text-zinc-200 leading-relaxed">
-                                {getLocalizedText(selectedItem, 'desc')}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                      <h2 className={`text-4xl font-black mb-2 tracking-tight ${detailTheme.accentColorClass}`}>
+                          {getLocalizedText(selectedItem, 'meaning')}
+                      </h2>
+                      
+                      <div className="flex items-center justify-center gap-3 text-zinc-400 mb-4">
+                          <span className="text-xl font-bold text-white">{selectedItem.term}</span>
+                          <span className="w-1 h-1 bg-zinc-600 rounded-full"></span>
+                          <span className="text-lg">{selectedItem.kana}</span>
+                      </div>
 
-                {/* EXAMPLE SECTION */}
-                <div className="px-4 pb-6">
-                    <div className="flex items-center justify-between mb-4 px-2">
-                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider pl-1">{uiText.example[lang]}</span>
-                        <button 
-                            onClick={() => handlePlay(getLocalizedText(selectedItem, 'example'), 'ex')}
-                            className={`flex items-center gap-2 px-3 py-1.5 transition-all active:scale-95 shadow-lg hover:brightness-110 relative z-20 ${detailTheme.buttonClass} text-xs`}
+                      {/* Meta Tags Row */}
+                      <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
+                           {/* Stars */}
+                           {selectedItem.stars && selectedItem.stars > 0 && (
+                                <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full flex items-center gap-1">
+                                    {Array.from({ length: selectedItem.stars }).map((_, i) => (
+                                        <Star key={i} className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                                    ))}
+                                </div>
+                           )}
+                           {/* Scene Tags */}
+                           {selectedItem.tags && selectedItem.tags.map(tagId => {
+                               const catTags = SCENE_TAGS[selectedItem.cat] || SCENE_TAGS['LIFE'];
+                               const tagObj = catTags.find(t => t.id === tagId);
+                               const tagLabel = tagObj ? (lang === 'cn' ? tagObj.label : (lang === 'hk' ? tagObj.label_hk : tagObj.label_tw)) : tagId;
+                               return (
+                                   <span key={tagId} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-zinc-300">
+                                       {tagLabel}
+                                   </span>
+                               );
+                           })}
+                           {/* Level Badge */}
+                           <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-zinc-500">
+                               Lv.{selectedItem.level}
+                           </span>
+                      </div>
+                  </div>
+
+                  {/* Play Button (Floating Center) */}
+                  <div className="flex justify-center -mt-6 mb-8 relative z-20">
+                        <button
+                            onClick={() => handlePlay(selectedItem.kana || selectedItem.term, selectedItem.id + "_main")}
+                            className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all active:scale-95 ${detailTheme.buttonClass}`}
                         >
-                            {playingId === 'ex' 
-                                ? (isAiLoading && useVoicevox ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3 animate-pulse" />)
-                                : <Mic2 className="w-3 h-3" />
-                            }
-                            <span className={`font-bold not-italic ${selectedItem.cat === 'APEX' ? 'skew-x-[10deg] inline-block' : ''}`}>{uiText.play[lang]}</span>
+                            {playingId === selectedItem.id + "_main" ? (
+                                <Loader2 className="w-8 h-8 animate-spin text-white" />
+                            ) : (
+                                <Volume2 className="w-8 h-8 text-white fill-current" />
+                            )}
                         </button>
-                    </div>
-                    <div className="space-y-4 pb-4">
-                        {renderChatBubbles(getLocalizedText(selectedItem, 'example'))}
-                    </div>
-                </div>
-            </div>
+                  </div>
 
-            {/* Bottom Controls Panel - Animated & Premium */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black via-zinc-950/95 to-transparent pt-12 pb-[env(safe-area-inset-bottom)] pointer-events-auto">
-                 <div className="px-6 pb-4 max-w-md mx-auto">
-                    
-                    {/* Glass Control Capsule */}
-                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-1.5 shadow-2xl shadow-black/50 mb-3 flex items-center justify-between gap-3">
-                         {/* Speed Controls (Segmented) */}
-                         <div className="flex bg-black/30 rounded-xl p-1 flex-1">
-                            {[0.5, 0.75, 1.0].map(s => (
-                                <button 
-                                    key={s}
-                                    onClick={() => { triggerHaptic(); setPlaybackSpeed(s); }}
-                                    className={`flex-1 py-2 rounded-lg text-[10px] font-bold transition-all duration-300 ${playbackSpeed === s ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                                >
-                                    {s}x
-                                </button>
-                            ))}
-                         </div>
-                         
-                         {/* Source Toggle Switch */}
-                         <button 
-                            onClick={() => { triggerHaptic(); setUseVoicevox(!useVoicevox); }}
-                            className={`relative px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 overflow-hidden ${useVoicevox ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-zinc-800 border border-white/5'}`}
-                         >
-                            <div className={`w-2 h-2 rounded-full ${useVoicevox ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></div>
-                            <span className={`text-xs font-bold ${useVoicevox ? 'text-emerald-400' : 'text-zinc-400'}`}>
-                                {useVoicevox ? uiText.voiceMode.online[lang] : uiText.voiceMode.offline[lang]}
-                            </span>
-                         </button>
-                    </div>
+                  {/* Description Box */}
+                  <div className="bg-white/5 border border-white/5 rounded-2xl p-5 mb-6 backdrop-blur-sm">
+                      <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                          <Type className="w-3 h-3" />
+                          {uiText.description[lang]}
+                      </h4>
+                      <p className="text-base leading-relaxed text-zinc-200">
+                          {getLocalizedText(selectedItem, 'desc')}
+                      </p>
+                  </div>
 
-                    {/* Animated Character Drawer */}
-                    <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden ${useVoicevox ? 'max-h-24 opacity-100 translate-y-0' : 'max-h-0 opacity-0 translate-y-4'}`}>
-                        <div className="grid grid-cols-2 gap-3 pb-2">
-                             <button
-                                onClick={() => { triggerHaptic(); setSelectedCharacter('zundamon'); }}
-                                className={`relative h-14 rounded-xl border transition-all duration-200 overflow-hidden group active:scale-95 ${selectedCharacter === 'zundamon' ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
-                             >
-                                <div className="absolute inset-0 flex items-center justify-center gap-3">
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${selectedCharacter === 'zundamon' ? 'bg-emerald-500 text-white shadow-lg scale-110' : 'bg-zinc-800 text-zinc-500'}`}>
-                                        <Leaf className="w-4 h-4" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className={`text-xs font-bold leading-none transition-colors ${selectedCharacter === 'zundamon' ? 'text-emerald-400' : 'text-zinc-400'}`}>{uiText.zundamon[lang]}</div>
-                                    </div>
-                                </div>
-                             </button>
+                  {/* Chat Examples */}
+                  <div className="mb-24">
+                      <div className="flex items-center justify-between mb-4 px-2">
+                          <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                              <MessageCircle className="w-3 h-3" />
+                              {uiText.example[lang]}
+                          </h4>
+                          <button 
+                             onClick={() => handlePlay(getLocalizedText(selectedItem, 'example'), selectedItem.id + "_ex")}
+                             className={`p-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/5 ${playingId === selectedItem.id + "_ex" ? 'text-green-400 border-green-500/30' : 'text-zinc-400'}`}
+                          >
+                             {playingId === selectedItem.id + "_ex" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+                          </button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                          {renderChatBubbles(getLocalizedText(selectedItem, 'example'))}
+                      </div>
+                  </div>
 
-                             <button
-                                onClick={() => { triggerHaptic(); setSelectedCharacter('metan'); }}
-                                className={`relative h-14 rounded-xl border transition-all duration-200 overflow-hidden group active:scale-95 ${selectedCharacter === 'metan' ? 'bg-fuchsia-500/10 border-fuchsia-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
-                             >
-                                <div className="absolute inset-0 flex items-center justify-center gap-3">
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${selectedCharacter === 'metan' ? 'bg-fuchsia-500 text-white shadow-lg scale-110' : 'bg-zinc-800 text-zinc-500'}`}>
-                                        <Sparkles className="w-4 h-4" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className={`text-xs font-bold leading-none transition-colors ${selectedCharacter === 'metan' ? 'text-fuchsia-400' : 'text-zinc-400'}`}>{uiText.metan[lang]}</div>
-                                    </div>
-                                </div>
-                             </button>
-                        </div>
-                    </div>
+              </div>
 
-                 </div>
-            </div>
+              {/* Bottom Settings in Detail View */}
+              <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/95 to-transparent pt-12 pb-6 px-6 z-20">
+                   <div className="flex items-center justify-between gap-4">
+                       <button 
+                           onClick={(e) => { triggerHaptic(); toggleFavorite(e, selectedItem.id); }}
+                           className="flex-1 h-12 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-center gap-2 font-bold text-sm active:scale-95 transition-all hover:bg-white/20"
+                       >
+                           <Backpack className={`w-4 h-4 ${favorites.includes(selectedItem.id) ? 'fill-yellow-400 text-yellow-400' : 'text-zinc-400'}`} />
+                           <span className={favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-zinc-300'}>
+                               {favorites.includes(selectedItem.id) ? 'Saved' : 'Save'}
+                           </span>
+                       </button>
 
+                       {/* Character Toggle */}
+                       <div className="flex bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-1 h-12 items-center">
+                           <button 
+                               onClick={() => { setSelectedCharacter('zundamon'); triggerHaptic(); }}
+                               className={`px-3 h-full rounded-lg text-[10px] font-bold transition-all ${selectedCharacter === 'zundamon' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}
+                           >
+                               {uiText.zundamon[lang]}
+                           </button>
+                           <button 
+                               onClick={() => { setSelectedCharacter('metan'); triggerHaptic(); }}
+                               className={`px-3 h-full rounded-lg text-[10px] font-bold transition-all ${selectedCharacter === 'metan' ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}
+                           >
+                               {uiText.metan[lang]}
+                           </button>
+                       </div>
+                   </div>
+              </div>
           </div>
         </div>
       )}
-
-      {isIOS && !isStandalone && (
-        <div className="fixed bottom-0 left-0 right-0 bg-neutral-900/95 border-t border-white/10 p-4 z-50 backdrop-blur-md animate-slide-up shadow-2xl safe-pb pb-[env(safe-area-inset-bottom)]">
-           <div className="max-w-md mx-auto flex items-start gap-4">
-              <div className="p-2 bg-neutral-800 rounded-lg">
-                 <Share className="w-6 h-6 text-blue-400" /> 
-              </div>
-              <div className="flex-1">
-                 <h4 className="font-bold text-sm text-zinc-100 mb-1">{uiText.iosTitle[lang]}</h4>
-                 <p className="text-xs text-neutral-400 leading-relaxed">
-                    {uiText.iosDesc[lang]}
-                 </p>
-              </div>
-              <button onClick={() => setIsIOS(false)} className="p-1 text-neutral-500 hover:text-white transition-colors">
-                 <X className="w-5 h-5" />
-              </button>
-           </div>
-        </div>
-      )}
       
-      <style>{`
-        @keyframes fadeInScale {
-          from { opacity: 0; transform: scale(0.98) translateY(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInLeft {
-          from { opacity: 0; transform: translateX(-20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(100%); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes expandVertical {
-          0% { clip-path: inset(50% 0 50% 0); opacity: 0; }
-          100% { clip-path: inset(0 0 0 0); opacity: 1; }
-        }
-        @keyframes collapseVertical {
-          0% { clip-path: inset(0 0 0 0); opacity: 1; }
-          100% { clip-path: inset(50% 0 50% 0); opacity: 0; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        /* Custom Breathe Animation for Splash Screen */
-        @keyframes breathe {
-          0%, 100% { transform: scale(1); filter: brightness(1); }
-          50% { transform: scale(1.05); filter: brightness(1.2); }
-        }
-        .animate-breathe {
-          animation: breathe 3s ease-in-out infinite;
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-            animation: fadeInUp 1s ease-out forwards;
-        }
-        .animate-enter {
-          animation: fadeInScale 0.4s cubic-bezier(0.2, 0.0, 0.2, 1) forwards;
-        }
-        .animate-slide-right {
-          animation: slideInRight 0.3s cubic-bezier(0.2, 0.0, 0.2, 1) forwards;
-        }
-        .animate-slide-left {
-          animation: slideInLeft 0.3s cubic-bezier(0.2, 0.0, 0.2, 1) forwards;
-        }
-        .animate-expand-vertical {
-          animation: expandVertical 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .animate-collapse-vertical {
-          animation: collapseVertical 0.25s ease-in forwards;
-        }
-        .animate-overlay-enter {
-          animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .animate-overlay-exit {
-          animation: slideDown 0.3s ease-in forwards;
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-        .animate-slide-up {
-          animation: slideUp 0.5s ease-out forwards;
-        }
-        .animate-in {
-            animation-duration: 0.2s;
-            animation-timing-function: ease-out;
-            animation-fill-mode: forwards;
-        }
-        @keyframes elasticDrop {
-            0% { opacity: 0; transform: scaleY(0.5); }
-            60% { transform: scaleY(1.1); }
-            100% { opacity: 1; transform: scaleY(1); }
-        }
-        .animate-elastic-drop {
-            animation: elasticDrop 0.4s cubic-bezier(0.3, 1.5, 0.5, 1) forwards;
-        }
-        .safe-pb {
-          padding-bottom: env(safe-area-inset-bottom, 20px);
-        }
-        .safe-pt {
-            padding-top: calc(env(safe-area-inset-top, 20px) + 210px);
-        }
-      `}</style>
     </div>
   );
 }
