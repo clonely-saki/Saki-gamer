@@ -247,7 +247,8 @@ const VocabCard = React.memo(({ item, catId, theme, isMaskMode, favorites, toggl
             {/* Right: Backpack (Favorite) Button */}
             <button
                 onClick={(e) => { triggerHaptic(); toggleFavorite(e, item.id); }}
-                className={`p-3 -mr-2 relative z-10 text-zinc-600 hover:text-yellow-400 active:scale-90 transition-all ${item.cat === 'APEX' ? 'skew-x-[2deg]' : ''}`}
+                // UPDATED: Used md:hover:text-yellow-400 to prevent sticky hover on mobile
+                className={`p-3 -mr-2 relative z-10 text-zinc-600 md:hover:text-yellow-400 active:scale-90 transition-all ${item.cat === 'APEX' ? 'skew-x-[2deg]' : ''}`}
             >
                 <div className="relative">
                     <Backpack className={`w-5 h-5 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
@@ -593,6 +594,11 @@ export default function App() {
     // If locked to Y (vertical scroll), do NOT move the slider horizontally
     if ((sliderRef.current as any)._lockDirection === 'y') {
         return; 
+    }
+
+    // UPDATED: Require strict X-axis lock before moving visually to prevent vertical scroll jitter
+    if ((sliderRef.current as any)._lockDirection !== 'x') {
+        return;
     }
 
     // If locked to X (horizontal swipe) OR not locked yet, move the slider
