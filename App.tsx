@@ -86,7 +86,7 @@ const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
 };
 
 // --- Unified Glass Icon Component ---
-const GlassListIcon = ({ cat }: { cat: string }) => {
+const GlassListIcon = React.memo(({ cat }: { cat: string }) => {
     let icon = <Layers className="w-5 h-5 text-zinc-100" />;
     // Enhanced gradients for a "gem-like" look
     let bgGradient = "from-slate-500/20 to-blue-600/20";
@@ -140,7 +140,7 @@ const GlassListIcon = ({ cat }: { cat: string }) => {
             {icon}
         </div>
     );
-};
+});
 
 // --- Theme Configurations ---
 // OPTIMIZATION: Removed backdrop-blur from cardClass to prevent iOS GPU memory overload/crashing
@@ -256,6 +256,45 @@ const THEME_STYLES: Record<string, {
   }
 };
 
+const VocabCard = React.memo(({ item, catId, theme, isMaskMode, favorites, toggleFavorite, openDetail, getLocalizedText, GlassListIcon }: any) => {
+    const displayMeaning = getLocalizedText(item, 'meaning');
+    return (
+        <div 
+            onClick={() => openDetail(item)}
+            className={`group py-4 px-4 flex items-center justify-between cursor-pointer ${
+            catId === 'ALL' ? THEME_STYLES['ALL'].cardClass : theme.cardClass
+            }`}
+        >
+            {/* Background Animation Layer */}
+            {catId === 'ALL' ? THEME_STYLES['ALL'].cardBgContent : theme.cardBgContent}
+            
+            {/* Left: Glass Icon Decoration */}
+            <div className={`mr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
+                <GlassListIcon cat={item.cat} />
+            </div>
+
+            {/* Center: Content */}
+            <div className={`flex-1 min-w-0 pr-2 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
+            <h3 className={`font-medium text-[16px] text-zinc-100 leading-relaxed mb-0.5 truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'not-italic' : ''}`}>
+                {displayMeaning}
+            </h3>
+            <p className={`text-[14px] font-normal text-slate-400 truncate font-mono flex items-center gap-2 group-hover:text-zinc-200 transition-colors`}>
+                <span>{item.term}</span>
+                {item.kana !== item.term && <span className="opacity-70 border-l border-neutral-600 pl-2 group-hover:text-neutral-300">{item.kana}</span>}
+            </p>
+            </div>
+
+            {/* Right: Favorite Button */}
+            <button
+                onClick={(e) => toggleFavorite(e, item.id)}
+                className={`p-2 relative z-10 text-neutral-600 hover:text-yellow-400 transition-colors ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}
+            >
+                <Star className={`w-5 h-5 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+            </button>
+        </div>
+    );
+});
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('ALL'); 
   const [selectedItem, setSelectedItem] = useState<VocabItem | null>(null); 
@@ -322,13 +361,13 @@ export default function App() {
       localStorage.setItem('jpgamer_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  const toggleFavorite = (e: React.MouseEvent | null, id: string) => {
+  const toggleFavorite = useCallback((e: React.MouseEvent | null, id: string) => {
       if (e) e.stopPropagation();
       setFavorites(prev => {
           if (prev.includes(id)) return prev.filter(i => i !== id);
           return [...prev, id];
       });
-  };
+  }, []);
 
   const selectLang = (newLang: 'cn' | 'tw' | 'hk') => {
     setLang(newLang);
@@ -632,11 +671,11 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPopState);
   }, [selectedItem, handleVisualClose]);
 
-  const openDetail = (item: VocabItem) => {
+  const openDetail = useCallback((item: VocabItem) => {
     window.history.pushState({ itemId: item.id }, "", "");
     setSelectedItem(item);
     setIsDetailClosing(false); 
-  };
+  }, []);
 
   const closeDetail = () => {
     window.history.back();
@@ -1036,7 +1075,12 @@ export default function App() {
                transition: 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)'
            }}
         >
-          {CATEGORIES.map(cat => {
+          {CATEGORIES.map((cat, index) => {
+             // VIRTUALIZATION LOGIC:
+             // Only render the list items if the tab is active or immediately adjacent (±1).
+             // This prevents iOS from trying to render 500+ heavy DOM elements at once.
+             const shouldRenderContent = Math.abs(activeIndex - index) <= 1;
+
              const items = allCategoriesData[cat.id];
              // Resolve theme for this specific column. 'ALL' has special logic, others rely on ID or default to LIFE
              const catTheme = cat.id === 'ALL' ? THEME_STYLES['ALL'] : (THEME_STYLES[cat.id] || THEME_STYLES['LIFE']);
@@ -1047,7 +1091,12 @@ export default function App() {
                  key={cat.id} 
                  id={`scroll-container-${cat.id}`}
                  className="h-full w-full overflow-y-auto no-scrollbar px-4 pb-[240px] pt-[calc(env(safe-area-inset-top)+6rem)]"
-                 style={{ width: `${100 / CATEGORIES.length}%` }}
+                 style={{ 
+                     width: `${100 / CATEGORIES.length}%`,
+                     // CSS Optimization: Tells browser to skip rendering off-screen content work
+                     contentVisibility: 'auto',
+                     containIntrinsicSize: '1px 5000px'
+                 }}
                >
                  {/* Category Title Header - Moves with slide */}
                  <div className="mb-6 mt-4 pl-2">
@@ -1057,51 +1106,32 @@ export default function App() {
                      </h2>
                  </div>
 
-                 {/* List */}
+                 {/* List - Virtualized */}
                  <div className="space-y-3">
-                   {items.length > 0 ? (
-                     items.map((item) => {
-                       const displayMeaning = getLocalizedText(item, 'meaning');
-                       return (
-                       <div 
-                         key={item.id} 
-                         onClick={() => openDetail(item)}
-                         className={`group py-4 px-4 flex items-center justify-between cursor-pointer ${
-                            cat.id === 'ALL' ? THEME_STYLES['ALL'].cardClass : catTheme.cardClass
-                         }`}
-                       >
-                         {/* Background Animation Layer */}
-                         {cat.id === 'ALL' ? THEME_STYLES['ALL'].cardBgContent : catTheme.cardBgContent}
-                         
-                         {/* Left: Glass Icon Decoration */}
-                         <div className={`mr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
-                             <GlassListIcon cat={item.cat} />
-                         </div>
-
-                         {/* Center: Content */}
-                         <div className={`flex-1 min-w-0 pr-2 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
-                           <h3 className={`font-medium text-[16px] text-zinc-100 leading-relaxed mb-0.5 truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'not-italic' : ''}`}>
-                               {displayMeaning}
-                           </h3>
-                           <p className={`text-[14px] font-normal text-slate-400 truncate font-mono flex items-center gap-2 group-hover:text-zinc-200 transition-colors`}>
-                             <span>{item.term}</span>
-                             {item.kana !== item.term && <span className="opacity-70 border-l border-neutral-600 pl-2 group-hover:text-neutral-300">{item.kana}</span>}
-                           </p>
-                         </div>
-
-                         {/* Right: Favorite Button */}
-                         <button
-                             onClick={(e) => toggleFavorite(e, item.id)}
-                             className={`p-2 relative z-10 text-neutral-600 hover:text-yellow-400 transition-colors ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}
-                         >
-                             <Star className={`w-5 h-5 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-                         </button>
-                       </div>
-                     )})
+                   {shouldRenderContent ? (
+                        items.length > 0 ? (
+                            items.map((item) => (
+                                <VocabCard 
+                                    key={item.id}
+                                    item={item}
+                                    catId={cat.id}
+                                    theme={catTheme}
+                                    isMaskMode={isMaskMode}
+                                    favorites={favorites}
+                                    toggleFavorite={toggleFavorite}
+                                    openDetail={openDetail}
+                                    getLocalizedText={getLocalizedText}
+                                    GlassListIcon={GlassListIcon}
+                                />
+                            ))
+                        ) : (
+                            <div className="text-center py-20 opacity-30 text-sm text-neutral-500">
+                                <p>{showFavorites ? uiText.noFavs[lang] : uiText.noResults[lang]}</p>
+                            </div>
+                        )
                    ) : (
-                      <div className="text-center py-20 opacity-30 text-sm text-neutral-500">
-                        <p>{showFavorites ? uiText.noFavs[lang] : uiText.noResults[lang]}</p>
-                      </div>
+                       // Placeholder to keep scroll height vaguely correct or just empty
+                       <div className="h-[200px] w-full"></div>
                    )}
                  </div>
                </div>
