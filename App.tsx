@@ -392,13 +392,10 @@ export default function App() {
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
-  // Swipe logic State
-  const [swipeState, setSwipeState] = useState({
-    startX: 0,
-    currentX: 0,
-    startY: 0,
-    isDragging: false
-  });
+  // Swipe logic: Using refs for direct DOM manipulation to avoid Re-renders on iOS
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<number | null>(null);
+  const isDraggingRef = useRef(false);
 
   const activeIndex = CATEGORIES.findIndex(c => c.id === activeTab);
   const currentTheme = THEME_STYLES[activeTab] || THEME_STYLES['LIFE'];
@@ -541,58 +538,79 @@ export default function App() {
     if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // --- Optimized Touch Handlers using Refs to prevent re-renders ---
   const onTouchStart = (e: React.TouchEvent) => {
     if (selectedItem) return;
     
     const startX = e.touches[0].clientX;
-    // Edge Protection for iOS:
-    // If the touch starts too close to the left/right edge, ignore it
-    // to allow the native iOS "Back" or "Forward" swipe gestures to work without conflict.
+    // Edge protection for iOS back swipe
     if (startX < 30 || startX > window.innerWidth - 30) {
         return;
     }
 
-    setSwipeState({
-        startX: startX,
-        currentX: startX,
-        startY: e.touches[0].clientY,
-        isDragging: true
-    });
+    touchStartRef.current = startX;
+    isDraggingRef.current = true;
+    
+    // Disable transition for instant feedback
+    if (sliderRef.current) {
+        sliderRef.current.style.transition = 'none';
+        sliderRef.current.style.willChange = 'transform';
+    }
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    if (!swipeState.isDragging || selectedItem) return;
-    const x = e.touches[0].clientX;
-    const y = e.touches[0].clientY;
+    if (!isDraggingRef.current || touchStartRef.current === null || !sliderRef.current) return;
     
-    // Determine scroll direction lock
-    const dx = Math.abs(x - swipeState.startX);
-    const dy = Math.abs(y - swipeState.startY);
-
-    // If vertical movement dominates, assume scrolling and ignore horizontal swipe
-    if (dy > dx) return;
-
-    setSwipeState(prev => ({ ...prev, currentX: x }));
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - touchStartRef.current;
+    
+    // Calculate transform manually
+    // Base position is -activeIndex * 100% (but container width relative)
+    // Actually the container is width = N * 100%. 
+    // If 5 categories, width = 500%.
+    // Active index 0: 0%
+    // Active index 1: -20% (relative to container width)
+    
+    const categoryCount = CATEGORIES.length;
+    const baseOffsetPct = -(activeIndex * (100 / categoryCount));
+    
+    // Apply transform directly to DOM
+    sliderRef.current.style.transform = `translateX(calc(${baseOffsetPct}% + ${diff}px))`;
   };
 
-  const onTouchEnd = () => {
-    if (!swipeState.isDragging || selectedItem) return;
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current || touchStartRef.current === null) return;
     
-    const diff = swipeState.currentX - swipeState.startX;
+    const currentX = e.changedTouches[0].clientX;
+    const diff = currentX - touchStartRef.current;
     const threshold = window.innerWidth * 0.2; // 20% width to trigger switch
+
+    isDraggingRef.current = false;
+    touchStartRef.current = null;
     
-    // Only switch if dragging horizontally (check implicitly via startX/currentX difference)
-    if (Math.abs(diff) > threshold) {
-        if (diff > 0 && activeIndex > 0) {
-            // Swipe Right -> Prev
-            handleTabChange(CATEGORIES[activeIndex - 1].id);
-        } else if (diff < 0 && activeIndex < CATEGORIES.length - 1) {
-            // Swipe Left -> Next
-            handleTabChange(CATEGORIES[activeIndex + 1].id);
-        }
+    let newTabId = activeTab;
+
+    if (diff > threshold && activeIndex > 0) {
+        newTabId = CATEGORIES[activeIndex - 1].id;
+    } else if (diff < -threshold && activeIndex < CATEGORIES.length - 1) {
+        newTabId = CATEGORIES[activeIndex + 1].id;
+    }
+
+    // Restore transition
+    if (sliderRef.current) {
+        sliderRef.current.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        sliderRef.current.style.willChange = 'auto'; // release memory
+        
+        // IMPORTANT: We need to clear the inline transform we set via JS
+        // so that React's state-based rendering takes over (or we force it to snap).
+        // If we change tab, the state update will drive the new transform.
+        // If we stay on same tab, clearing it snaps back (because React's style hasn't changed).
+        sliderRef.current.style.transform = ''; 
     }
     
-    setSwipeState(prev => ({ ...prev, isDragging: false, startX: 0, currentX: 0 }));
+    if (newTabId !== activeTab) {
+        handleTabChange(newTabId);
+    }
   };
 
   const handleVisualClose = useCallback(() => {
@@ -1009,11 +1027,13 @@ export default function App() {
         style={{ touchAction: 'pan-y' }} // Let browser handle vertical scroll, we handle swipe
       >
         <div 
+           ref={sliderRef}
            className="flex h-full transition-transform"
            style={{
                width: `${CATEGORIES.length * 100}%`,
-               transform: `translateX(calc(-${activeIndex * (100 / CATEGORIES.length)}% + ${swipeState.isDragging ? (swipeState.currentX - swipeState.startX) : 0}px))`,
-               transition: swipeState.isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)'
+               // transform is managed by ref during drag, but we set initial state here for SSR/first render
+               transform: `translateX(-${activeIndex * (100 / CATEGORIES.length)}%)`,
+               transition: 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)'
            }}
         >
           {CATEGORIES.map(cat => {
