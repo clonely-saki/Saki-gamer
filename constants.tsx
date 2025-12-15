@@ -1,5 +1,35 @@
 import React from 'react';
-import { Sparkles, Zap, Target, Gamepad2, Layers } from 'lucide-react';
+import { Layers, MessageCircle } from 'lucide-react';
+
+// --- Custom Game Logos (SVGs) ---
+
+export const ValorantLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    {/* Right shape */}
+    <path d="M22 3.5h-4.3L9.6 22h4.2l8.2-18.5z" />
+    {/* Left shape */}
+    <path d="M2 3.5h4.8l2.9 6.9-7.7-6.9z" />
+  </svg>
+);
+
+export const ApexLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    {/* Main A shape with cutouts */}
+    <path d="M12 2.5L2.8 19.5h3.8l1.7-3.3h7.4l1.7 3.3h3.8L12 2.5zm-.9 9.8L12 10l.9 2.3h-1.8z" />
+    {/* Bottom bar if needed, but the main A shape is iconic enough */}
+  </svg>
+);
+
+export const OWLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    {/* Top Arc */}
+    <path d="M12 2.5c-4.8 0-8.8 3.6-9.4 8.2h3.9c.5-2.5 2.7-4.3 5.5-4.3s5 1.9 5.5 4.3h3.9c-.6-4.6-4.6-8.2-9.4-8.2z" />
+    {/* Left Arm */}
+    <path d="M5.7 12.8c.9 3.6 4 6.5 7.7 7.2l-1.9-4.8-1.7-1.7H5.7z" />
+    {/* Right Arm */}
+    <path d="M18.3 12.8h-4.2l-1.7 1.7-1.9 4.8c3.8-.7 6.8-3.6 7.8-7.2z" />
+  </svg>
+);
 
 export interface Category {
   id: string;
@@ -30,11 +60,11 @@ export interface VocabItem {
 }
 
 export const CATEGORIES: Category[] = [
-  { id: 'ALL', name: '综合', name_tw: '綜合', name_hk: '綜合', icon: <Layers className="w-4 h-4" />, color: 'text-white border-white/30 bg-white/10' },
-  { id: 'LIFE', name: '常用/网络', name_tw: '常用/網路', name_hk: '常用/網絡', icon: <Sparkles className="w-4 h-4" />, color: 'text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10' },
-  { id: 'VALORANT', name: '瓦罗兰特', name_tw: '特戰英豪', name_hk: 'Valorant', icon: <Zap className="w-4 h-4" />, color: 'text-rose-400 border-rose-500/30 bg-rose-500/10' },
-  { id: 'APEX', name: 'APEX', name_tw: 'Apex 英雄', name_hk: 'Apex 英雄', icon: <Target className="w-4 h-4" />, color: 'text-red-400 border-red-500/30 bg-red-500/10' },
-  { id: 'OW', name: '守望先锋', name_tw: '鬥陣特攻', name_hk: '鬥陣特攻', icon: <Gamepad2 className="w-4 h-4" />, color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
+  { id: 'ALL', name: '综合', name_tw: '綜合', name_hk: '綜合', icon: <Layers className="w-5 h-5" />, color: 'text-white border-white/30 bg-white/10' },
+  { id: 'LIFE', name: '常用/网络', name_tw: '常用/網路', name_hk: '常用/網絡', icon: <MessageCircle className="w-5 h-5" />, color: 'text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10' },
+  { id: 'VALORANT', name: '瓦罗兰特', name_tw: '特戰英豪', name_hk: 'Valorant', icon: <ValorantLogo className="w-5 h-5" />, color: 'text-rose-400 border-rose-500/30 bg-rose-500/10' },
+  { id: 'APEX', name: 'APEX', name_tw: 'Apex 英雄', name_hk: 'Apex 英雄', icon: <ApexLogo className="w-5 h-5" />, color: 'text-red-400 border-red-500/30 bg-red-500/10' },
+  { id: 'OW', name: '守望先锋', name_tw: '鬥陣特攻', name_hk: '鬥陣特攻', icon: <OWLogo className="w-5 h-5" />, color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
 ];
 
 export const VOCAB_DATA: VocabItem[] = [

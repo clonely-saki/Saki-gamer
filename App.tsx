@@ -6,9 +6,9 @@ import {
   WifiOff, Star, Layers, Globe, Sparkles,
   Battery, Syringe, Box, Skull, Flame, Hexagon, Heart, Eye, Hand, Footprints, Clock, Coins, Speaker,
   EyeOff, Settings2, Check, Mic2, Radio, Loader2, Leaf, Music2, Cpu, Menu,
-  Languages, Type, Wifi, Signal, ChevronDown
+  Languages, Type, Wifi, Signal, ChevronDown, Backpack, Activity
 } from 'lucide-react';
-import { CATEGORIES, VOCAB_DATA, VocabItem } from './constants';
+import { CATEGORIES, VOCAB_DATA, VocabItem, ValorantLogo, ApexLogo, OWLogo } from './constants';
 
 // --- Audio Helper Functions ---
 
@@ -96,22 +96,22 @@ const GlassListIcon = React.memo(({ cat }: { cat: string }) => {
 
     switch(cat) {
         case 'LIFE':
-            icon = <Sparkles className="w-5 h-5 text-fuchsia-200" />;
+            icon = <MessageCircle className="w-5 h-5 text-fuchsia-200" />;
             bgGradient = "from-fuchsia-900/40 to-purple-900/40";
             borderColor = "border-fuchsia-500/20";
             break;
         case 'VALORANT':
-            icon = <Zap className="w-5 h-5 text-rose-200" />;
+            icon = <ValorantLogo className="w-5 h-5 text-rose-200" />;
             bgGradient = "from-rose-900/40 to-red-900/40";
             borderColor = "border-rose-500/20";
             break;
         case 'APEX':
-            icon = <Target className="w-5 h-5 text-red-200" />;
+            icon = <ApexLogo className="w-5 h-5 text-red-200" />;
             bgGradient = "from-red-900/40 to-orange-900/40";
             borderColor = "border-red-500/20";
             break;
         case 'OW':
-            icon = <Gamepad2 className="w-5 h-5 text-orange-200" />;
+            icon = <OWLogo className="w-5 h-5 text-orange-200" />;
             bgGradient = "from-orange-900/40 to-amber-900/40";
             borderColor = "border-orange-500/20";
             break;
@@ -130,8 +130,7 @@ const GlassListIcon = React.memo(({ cat }: { cat: string }) => {
 });
 
 // --- Theme Configurations ---
-// OPTIMIZATION: Flat design to reduce rendering overhead. 
-// Removed complex shadows, heavy borders, and background layers for list items.
+// OPTIMIZATION: Updated with "Gamer Borders" as requested.
 const THEME_STYLES: Record<string, { 
     bgClass: string,
     bgOverlay: React.ReactNode,
@@ -146,14 +145,13 @@ const THEME_STYLES: Record<string, {
     bgOverlay: (
        <div className="absolute inset-0 overflow-hidden pointer-events-none">
          <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-blue-950/20 via-[#0a0a0c] to-[#050505]"></div>
-         {/* Simple noise or pattern is okay as it is one layer */}
        </div>
     ),
-    // Flat list item style: Transparent bg, bottom border for separation
+    // Standard flat list for ALL
     cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-white/5 active:bg-white/5 transition-colors",
     accentColorClass: "text-blue-400", 
     buttonClass: "bg-zinc-100 text-black rounded-xl font-bold hover:bg-zinc-200 transition-all",
-    detailBgClass: "bg-[#050505]", // Simplified background
+    detailBgClass: "bg-[#050505]", 
     underlineColor: "border-blue-400"
   },
   LIFE: {
@@ -163,7 +161,7 @@ const THEME_STYLES: Record<string, {
         <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-fuchsia-900/20 via-[#0a0a0c] to-[#050505]"></div>
       </div>
     ),
-    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-white/5 active:bg-white/5 transition-colors",
+    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-fuchsia-500/20 active:bg-fuchsia-500/5 transition-colors",
     accentColorClass: "text-fuchsia-400",
     buttonClass: "bg-gradient-to-r from-fuchsia-600 to-purple-600 rounded-xl font-bold shadow-lg shadow-fuchsia-900/20 hover:shadow-fuchsia-600/40 transition-all",
     detailBgClass: "bg-[#050505]",
@@ -177,8 +175,8 @@ const THEME_STYLES: Record<string, {
         <div className="absolute top-0 right-0 w-[60%] h-full bg-[#ff4655]/5 skew-x-[-20deg] transform origin-bottom"></div>
       </div>
     ),
-    // Flat style with subtle accent border color
-    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-[#ff4655]/10 active:bg-[#ff4655]/5 transition-colors",
+    // Valorant: Left Border (Tech/Cyberpunk feel)
+    cardClass: "group relative py-5 px-3 flex items-center justify-between border-l-2 border-[#ff4655] bg-[#ff4655]/[0.02] border-b border-white/5 active:bg-[#ff4655]/10 transition-colors my-1",
     accentColorClass: "text-[#ff4655]",
     buttonClass: "bg-[#ff4655] rounded-none uppercase tracking-wider font-bold [clip-path:polygon(0_0,100%_0,100%_80%,92%_100%,0_100%)] hover:bg-[#ff5865]",
     detailBgClass: "bg-[#0f1923]",
@@ -191,8 +189,8 @@ const THEME_STYLES: Record<string, {
         <div className="absolute top-0 left-0 w-full h-[451px] bg-gradient-to-b from-[#da292a]/10 via-[#1a0b0b]/80 to-[#1a0b0b]"></div>
       </div>
     ),
-    // Removed skew from container to prevent rendering artifacts/crashes, kept red accent
-    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-red-500/10 active:bg-red-500/5 transition-colors",
+    // Apex: Bottom Border (Industrial feel), angular
+    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b-2 border-[#da292a] bg-gradient-to-r from-transparent to-[#da292a]/5 active:from-[#da292a]/10 transition-colors my-1 skew-x-[-2deg]",
     accentColorClass: "text-[#ff4e4e]",
     buttonClass: "bg-[#da292a] skew-x-[-10deg] border-b-4 border-[#8e0e0e] font-bold tracking-tighter uppercase hover:bg-[#f03a3b]",
     detailBgClass: "bg-[#1a0b0b]",
@@ -205,7 +203,8 @@ const THEME_STYLES: Record<string, {
         <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-[#f99e1a]/10 via-[#181a20] to-[#181a20]"></div>
       </div>
     ),
-    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-[#f99e1a]/10 active:bg-[#f99e1a]/5 transition-colors",
+    // Overwatch: Full Border (Hero Card feel), rounded
+    cardClass: "group relative py-5 px-4 flex items-center justify-between border border-[#f99e1a]/30 rounded-xl bg-[#f99e1a]/5 hover:bg-[#f99e1a]/10 active:scale-[0.99] transition-all my-2 mx-1",
     accentColorClass: "text-[#f99e1a] font-bold",
     buttonClass: "bg-[#f99e1a] hover:bg-[#ffaa33] text-[#16171d] rounded-xl font-bold shadow-[0_4px_15px_-5px_rgba(249,158,26,0.4)] transition-all transform hover:-translate-y-0.5",
     detailBgClass: "bg-[#181a20]",
@@ -213,20 +212,26 @@ const THEME_STYLES: Record<string, {
   }
 };
 
+const triggerHaptic = () => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(15);
+    }
+};
+
 const VocabCard = React.memo(({ item, catId, theme, isMaskMode, favorites, toggleFavorite, openDetail, getLocalizedText, GlassListIcon }: any) => {
     const displayMeaning = getLocalizedText(item, 'meaning');
     return (
         <div 
-            onClick={() => openDetail(item)}
+            onClick={() => { triggerHaptic(); openDetail(item); }}
             className={catId === 'ALL' ? THEME_STYLES['ALL'].cardClass : theme.cardClass}
         >
             {/* Left: Icon - Visual Anchor */}
-            <div className={`mr-4 relative z-10 shrink-0 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
+            <div className={`mr-4 relative z-10 shrink-0 ${item.cat === 'APEX' ? 'skew-x-[2deg]' : ''}`}>
                 <GlassListIcon cat={item.cat} />
             </div>
 
             {/* Center: Content */}
-            <div className={`flex-1 min-w-0 pr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
+            <div className={`flex-1 min-w-0 pr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[2deg]' : ''}`}>
                 <div className="flex items-center gap-2 mb-1">
                     <h3 className={`font-medium text-[17px] text-zinc-100 leading-snug truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'not-italic' : ''}`}>
                         {displayMeaning}
@@ -239,12 +244,14 @@ const VocabCard = React.memo(({ item, catId, theme, isMaskMode, favorites, toggl
                 </p>
             </div>
 
-            {/* Right: Favorite Button */}
+            {/* Right: Backpack (Favorite) Button */}
             <button
-                onClick={(e) => toggleFavorite(e, item.id)}
-                className={`p-3 -mr-2 relative z-10 text-zinc-700 hover:text-yellow-400 active:scale-95 transition-colors ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}
+                onClick={(e) => { triggerHaptic(); toggleFavorite(e, item.id); }}
+                className={`p-3 -mr-2 relative z-10 text-zinc-600 hover:text-yellow-400 active:scale-90 transition-all ${item.cat === 'APEX' ? 'skew-x-[2deg]' : ''}`}
             >
-                <Star className={`w-5 h-5 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                <div className="relative">
+                    <Backpack className={`w-5 h-5 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                </div>
             </button>
         </div>
     );
@@ -349,16 +356,16 @@ export default function App() {
 
   const uiText = {
       searchPlaceholder: {
-          cn: showFavorites ? "搜索收藏..." : "搜索...",
-          tw: showFavorites ? "搜尋收藏..." : "搜尋...",
-          hk: showFavorites ? "搜尋收藏..." : "搜尋...",
+          cn: showFavorites ? "搜索背包..." : "搜索...",
+          tw: showFavorites ? "搜尋背包..." : "搜尋...",
+          hk: showFavorites ? "搜尋背包..." : "搜尋...",
       },
       offlineMode: { cn: "离线", tw: "離線", hk: "離線" },
-      favorite: { cn: "收藏", tw: "收藏", hk: "收藏" },
+      favorite: { cn: "背包", tw: "背包", hk: "背包" },
       install: { cn: "安装", tw: "安裝", hk: "安裝" },
       lifeCat: { cn: "常用", tw: "常用", hk: "常用" },
       noResults: { cn: "没有找到相关词汇", tw: "沒有找到相關詞彙", hk: "搵唔到相關詞彙" },
-      noFavs: { cn: "本分类下暂无收藏", tw: "本分類下暫無收藏", hk: "呢個分類暫無收藏" },
+      noFavs: { cn: "背包空空如也", tw: "背包空空如也", hk: "背包吉嘅" },
       lifeScene: { cn: "常用场景", tw: "常用場景", hk: "常用場景" },
       gameVoice: { cn: "游戏语音", tw: "遊戲語音", hk: "遊戲語音" },
       play: { cn: "播放", tw: "播放", hk: "播放" },
@@ -532,20 +539,29 @@ export default function App() {
     if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // --- Optimized Touch Handlers using Refs to prevent re-renders ---
+  // --- Optimized Touch Handlers for Axis Locking ---
   const onTouchStart = (e: React.TouchEvent) => {
     if (selectedItem) return;
     
-    const startX = e.touches[0].clientX;
-    // Edge protection for iOS back swipe
+    const touch = e.touches[0];
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+    
+    // Edge protection
     if (startX < 30 || startX > window.innerWidth - 30) {
         return;
     }
 
     touchStartRef.current = startX;
+    
+    // Axis locking initialization
+    // We store Y to calculate angle later
+    (sliderRef.current as any)._startY = startY;
+    (sliderRef.current as any)._isAxisLocked = false;
+    (sliderRef.current as any)._lockDirection = null; // 'x' or 'y'
+
     isDraggingRef.current = true;
     
-    // Disable transition for instant feedback
     if (sliderRef.current) {
         sliderRef.current.style.transition = 'none';
         sliderRef.current.style.willChange = 'transform';
@@ -555,14 +571,42 @@ export default function App() {
   const onTouchMove = (e: React.TouchEvent) => {
     if (!isDraggingRef.current || touchStartRef.current === null || !sliderRef.current) return;
     
-    const currentX = e.touches[0].clientX;
-    const diff = currentX - touchStartRef.current;
+    const touch = e.touches[0];
+    const currentX = touch.clientX;
+    const currentY = touch.clientY;
+    
+    const diffX = currentX - touchStartRef.current;
+    const diffY = currentY - (sliderRef.current as any)._startY;
+
+    // Axis Locking Logic (First 10px determines fate)
+    if (!(sliderRef.current as any)._isAxisLocked) {
+        if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+            (sliderRef.current as any)._isAxisLocked = true;
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                (sliderRef.current as any)._lockDirection = 'x';
+            } else {
+                (sliderRef.current as any)._lockDirection = 'y';
+            }
+        }
+    }
+
+    // If locked to Y (vertical scroll), do NOT move the slider horizontally
+    if ((sliderRef.current as any)._lockDirection === 'y') {
+        return; 
+    }
+
+    // If locked to X (horizontal swipe) OR not locked yet, move the slider
+    // We prevent default if moving X to stop browser back navigation if possible (though tough on iOS)
+    if ((sliderRef.current as any)._lockDirection === 'x' && e.cancelable) {
+        // e.preventDefault(); // Careful with this, might block scroll. 
+        // We rely on CSS touch-action: pan-y mostly.
+    }
     
     const categoryCount = CATEGORIES.length;
     const baseOffsetPct = -(activeIndex * (100 / categoryCount));
     
     // Apply transform directly to DOM
-    sliderRef.current.style.transform = `translateX(calc(${baseOffsetPct}% + ${diff}px))`;
+    sliderRef.current.style.transform = `translateX(calc(${baseOffsetPct}% + ${diffX}px))`;
   };
 
   const onTouchEnd = (e: React.TouchEvent) => {
@@ -572,22 +616,26 @@ export default function App() {
     const diff = currentX - touchStartRef.current;
     const threshold = window.innerWidth * 0.2; // 20% width to trigger switch
 
+    // Only switch if we were actually locked to X or moved significantly
+    const isYLocked = (sliderRef.current as any)._lockDirection === 'y';
+
     isDraggingRef.current = false;
     touchStartRef.current = null;
     
     let newTabId = activeTab;
 
-    if (diff > threshold && activeIndex > 0) {
-        newTabId = CATEGORIES[activeIndex - 1].id;
-    } else if (diff < -threshold && activeIndex < CATEGORIES.length - 1) {
-        newTabId = CATEGORIES[activeIndex + 1].id;
+    if (!isYLocked) {
+        if (diff > threshold && activeIndex > 0) {
+            newTabId = CATEGORIES[activeIndex - 1].id;
+        } else if (diff < -threshold && activeIndex < CATEGORIES.length - 1) {
+            newTabId = CATEGORIES[activeIndex + 1].id;
+        }
     }
 
     // Restore transition
     if (sliderRef.current) {
         sliderRef.current.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
         sliderRef.current.style.willChange = 'auto'; // release memory
-        
         sliderRef.current.style.transform = ''; 
     }
     
@@ -714,6 +762,7 @@ export default function App() {
   const playVoicevoxAudio = async (text: string, id: string) => {
       setPlayingId(id);
       setIsAiLoading(true);
+      triggerHaptic();
       
       try {
           if (!audioContextRef.current) {
@@ -761,6 +810,7 @@ export default function App() {
 
   const handleBrowserPlay = (text: string, id: string) => {
     setPlayingId(id);
+    triggerHaptic();
     const rawLines = text.split('\n');
     const cleanLines = rawLines.map(line => {
         const isB = line.trim().startsWith('B') || line.trim().startsWith('Ｂ');
@@ -1118,10 +1168,10 @@ export default function App() {
                     <div className="w-px h-4 bg-white/10 mx-1"></div>
                     
                     <button 
-                        onClick={() => setShowFavorites(!showFavorites)}
+                        onClick={() => { triggerHaptic(); setShowFavorites(!showFavorites); }}
                         className={`p-1.5 rounded-full transition-all active:scale-95 ${showFavorites ? 'text-yellow-400 bg-yellow-400/10' : 'text-zinc-500 hover:text-zinc-300'}`}
                     >
-                        <Star className={`w-5 h-5 ${showFavorites ? 'fill-current' : ''}`} />
+                        <Backpack className={`w-5 h-5 ${showFavorites ? 'fill-current' : ''}`} />
                     </button>
                 </div>
              </div>
@@ -1137,7 +1187,7 @@ export default function App() {
                     {CATEGORIES.map(cat => (
                       <button
                         key={cat.id}
-                        onClick={() => handleTabChange(cat.id)}
+                        onClick={() => { triggerHaptic(); handleTabChange(cat.id); }}
                         className={`flex flex-col items-center justify-center gap-1.5 transition-all duration-300 group ${
                             activeTab === cat.id ? 'opacity-100 scale-110' : 'opacity-50 hover:opacity-80 scale-100'
                         }`}
@@ -1179,10 +1229,10 @@ export default function App() {
 
                 <div className="flex gap-2">
                     <button 
-                        onClick={(e) => toggleFavorite(e, selectedItem.id)}
+                        onClick={(e) => { triggerHaptic(); toggleFavorite(e, selectedItem.id); }}
                         className={`pointer-events-auto w-12 h-12 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl active:scale-95 transition-all hover:bg-black/60 ${favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-neutral-200'}`}
                     >
-                        <Star className={`w-6 h-6 ${favorites.includes(selectedItem.id) ? 'fill-current' : ''}`} />
+                        <Backpack className={`w-6 h-6 ${favorites.includes(selectedItem.id) ? 'fill-current' : ''}`} />
                     </button>
                 </div>
             </div>
@@ -1204,7 +1254,14 @@ export default function App() {
                              {playingId === 'term' && isAiLoading && useVoicevox ? (
                                  <Loader2 className="w-6 h-6 animate-spin" />
                              ) : (
-                                 <Volume2 className="w-6 h-6" />
+                                 <div className="relative">
+                                    <Mic2 className="w-6 h-6" />
+                                    {playingId === 'term' && (
+                                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
+                                        </span>
+                                    )}
+                                 </div>
                              )}
                         </div>
                     </button>
@@ -1248,8 +1305,8 @@ export default function App() {
                             className={`flex items-center gap-2 px-3 py-1.5 transition-all active:scale-95 shadow-lg hover:brightness-110 relative z-20 ${detailTheme.buttonClass} text-xs`}
                         >
                             {playingId === 'ex' 
-                                ? (isAiLoading && useVoicevox ? <Loader2 className="w-3 h-3 animate-spin" /> : <Volume2 className="w-3 h-3 animate-pulse" />)
-                                : <Play className="w-3 h-3" />
+                                ? (isAiLoading && useVoicevox ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3 animate-pulse" />)
+                                : <Mic2 className="w-3 h-3" />
                             }
                             <span className={`font-bold not-italic ${selectedItem.cat === 'APEX' ? 'skew-x-[10deg] inline-block' : ''}`}>{uiText.play[lang]}</span>
                         </button>
@@ -1271,7 +1328,7 @@ export default function App() {
                             {[0.5, 0.75, 1.0].map(s => (
                                 <button 
                                     key={s}
-                                    onClick={() => setPlaybackSpeed(s)}
+                                    onClick={() => { triggerHaptic(); setPlaybackSpeed(s); }}
                                     className={`flex-1 py-2 rounded-lg text-[10px] font-bold transition-all duration-300 ${playbackSpeed === s ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
                                 >
                                     {s}x
@@ -1281,7 +1338,7 @@ export default function App() {
                          
                          {/* Source Toggle Switch */}
                          <button 
-                            onClick={() => setUseVoicevox(!useVoicevox)}
+                            onClick={() => { triggerHaptic(); setUseVoicevox(!useVoicevox); }}
                             className={`relative px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 overflow-hidden ${useVoicevox ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-zinc-800 border border-white/5'}`}
                          >
                             <div className={`w-2 h-2 rounded-full ${useVoicevox ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></div>
@@ -1295,7 +1352,7 @@ export default function App() {
                     <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden ${useVoicevox ? 'max-h-24 opacity-100 translate-y-0' : 'max-h-0 opacity-0 translate-y-4'}`}>
                         <div className="grid grid-cols-2 gap-3 pb-2">
                              <button
-                                onClick={() => setSelectedCharacter('zundamon')}
+                                onClick={() => { triggerHaptic(); setSelectedCharacter('zundamon'); }}
                                 className={`relative h-14 rounded-xl border transition-all duration-200 overflow-hidden group active:scale-95 ${selectedCharacter === 'zundamon' ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
                              >
                                 <div className="absolute inset-0 flex items-center justify-center gap-3">
@@ -1309,7 +1366,7 @@ export default function App() {
                              </button>
 
                              <button
-                                onClick={() => setSelectedCharacter('metan')}
+                                onClick={() => { triggerHaptic(); setSelectedCharacter('metan'); }}
                                 className={`relative h-14 rounded-xl border transition-all duration-200 overflow-hidden group active:scale-95 ${selectedCharacter === 'metan' ? 'bg-fuchsia-500/10 border-fuchsia-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
                              >
                                 <div className="absolute inset-0 flex items-center justify-center gap-3">
