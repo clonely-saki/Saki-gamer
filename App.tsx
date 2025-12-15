@@ -132,8 +132,9 @@ const GlassListIcon = ({ cat }: { cat: string }) => {
             break;
     }
 
+    // REMOVED backdrop-blur-md to prevent iOS crashes on scroll
     return (
-        <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${bgGradient} border ${borderColor} shadow-lg ${glowColor} backdrop-blur-md group-hover:scale-105 transition-transform duration-300 ring-1 ring-inset ${ringColor}`}>
+        <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${bgGradient} border ${borderColor} shadow-lg ${glowColor} group-hover:scale-105 transition-transform duration-300 ring-1 ring-inset ${ringColor}`}>
             {/* Inner gloss reflection */}
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-transparent opacity-50 pointer-events-none"></div>
             {icon}
@@ -142,6 +143,7 @@ const GlassListIcon = ({ cat }: { cat: string }) => {
 };
 
 // --- Theme Configurations ---
+// OPTIMIZATION: Removed backdrop-blur from cardClass to prevent iOS GPU memory overload/crashing
 const THEME_STYLES: Record<string, { 
     bgClass: string,
     bgOverlay: React.ReactNode,
@@ -162,8 +164,8 @@ const THEME_STYLES: Record<string, {
          <div className="absolute top-[-200px] right-[-100px] w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px]"></div>
        </div>
     ),
-    // Added Inner Glow
-    cardClass: "rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.05)] backdrop-blur-md relative overflow-hidden group hover:border-white/10 hover:shadow-blue-500/5",
+    // Removed backdrop-blur-md
+    cardClass: "rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.05)] relative overflow-hidden group hover:border-white/10 hover:shadow-blue-500/5",
     cardBgContent: (
       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
     ),
@@ -182,8 +184,8 @@ const THEME_STYLES: Record<string, {
         <div className="absolute bottom-0 right-0 w-[500px] h-[300px] bg-fuchsia-600/10 rounded-full blur-[100px]"></div>
       </div>
     ),
-    // Added Inner Glow
-    cardClass: "rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.05)] backdrop-blur-md relative overflow-hidden group hover:border-white/10 hover:shadow-fuchsia-500/5",
+    // Removed backdrop-blur-md
+    cardClass: "rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.05)] relative overflow-hidden group hover:border-white/10 hover:shadow-fuchsia-500/5",
     cardBgContent: (
       <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
     ),
@@ -202,8 +204,8 @@ const THEME_STYLES: Record<string, {
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,70,85,0.05)_1px,transparent_1px)] bg-[size:100px_100%] opacity-20"></div>
       </div>
     ),
-    // Added Inner Glow
-    cardClass: "rounded-none border border-white/5 bg-[#ece8e1]/5 hover:bg-[#ece8e1]/10 transition-all relative overflow-hidden group/card shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] backdrop-blur-sm hover:border-[#ff4655]/30",
+    // Removed backdrop-blur-sm
+    cardClass: "rounded-none border border-white/5 bg-[#ece8e1]/5 hover:bg-[#ece8e1]/10 transition-all relative overflow-hidden group/card shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] hover:border-[#ff4655]/30",
     cardBgContent: (
       <div className="absolute inset-0 pointer-events-none opacity-20 group-hover/card:opacity-30 transition-opacity">
          <div className="absolute top-0 right-0 w-20 h-full bg-[#ff4655]/20 skew-x-[-20deg]"></div>
@@ -223,8 +225,8 @@ const THEME_STYLES: Record<string, {
         <div className="absolute top-0 right-0 w-[200px] h-full border-l border-red-500/10 skew-x-[-15deg]"></div>
       </div>
     ),
-    // Added Inner Glow
-    cardClass: "skew-x-[-6deg] border border-white/5 bg-gradient-to-br from-neutral-900/40 to-neutral-950/40 hover:from-red-900/20 backdrop-blur-md transition-all relative overflow-hidden shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] hover:border-red-500/30",
+    // Removed backdrop-blur-md
+    cardClass: "skew-x-[-6deg] border border-white/5 bg-gradient-to-br from-neutral-900/40 to-neutral-950/40 hover:from-red-900/20 transition-all relative overflow-hidden shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] hover:border-red-500/30",
     cardBgContent: (
       <div className="absolute inset-0 pointer-events-none opacity-30 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#000_10px,#000_11px)]"></div>
     ),
@@ -242,8 +244,8 @@ const THEME_STYLES: Record<string, {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px] opacity-20"></div>
       </div>
     ),
-    // Added Inner Glow
-    cardClass: "rounded-2xl border border-white/5 bg-[#22252e]/60 hover:bg-[#2b2f3a]/80 transition-all shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] relative overflow-hidden group backdrop-blur-md hover:border-[#f99e1a]/30",
+    // Removed backdrop-blur-md
+    cardClass: "rounded-2xl border border-white/5 bg-[#22252e]/60 hover:bg-[#2b2f3a]/80 transition-all shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] relative overflow-hidden group hover:border-[#f99e1a]/30",
     cardBgContent: (
        <div className="absolute inset-0 bg-gradient-to-r from-[#f99e1a]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
     ),
@@ -541,9 +543,18 @@ export default function App() {
 
   const onTouchStart = (e: React.TouchEvent) => {
     if (selectedItem) return;
+    
+    const startX = e.touches[0].clientX;
+    // Edge Protection for iOS:
+    // If the touch starts too close to the left/right edge, ignore it
+    // to allow the native iOS "Back" or "Forward" swipe gestures to work without conflict.
+    if (startX < 30 || startX > window.innerWidth - 30) {
+        return;
+    }
+
     setSwipeState({
-        startX: e.touches[0].clientX,
-        currentX: e.touches[0].clientX,
+        startX: startX,
+        currentX: startX,
         startY: e.touches[0].clientY,
         isDragging: true
     });
