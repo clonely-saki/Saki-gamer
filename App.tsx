@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Play, Search, X, Volume2, 
@@ -6,7 +7,8 @@ import {
   WifiOff, Star, Layers, Globe, Sparkles,
   Battery, Syringe, Box, Skull, Flame, Hexagon, Heart, Eye, Hand, Footprints, Clock, Coins, Speaker,
   EyeOff, Settings2, Check, Mic2, Radio, Loader2, Leaf, Music2, Cpu, Menu,
-  Languages, Type, Wifi, Signal, ChevronDown, Backpack, Activity
+  Languages, Type, Wifi, Signal, ChevronDown, Backpack, Activity, Coffee, ExternalLink,
+  Save, Upload, FileJson, Copy, CheckCircle
 } from 'lucide-react';
 import { CATEGORIES, VOCAB_DATA, VocabItem, ValorantLogo, ApexLogo, OWLogo, SCENE_TAGS } from './constants';
 
@@ -281,6 +283,7 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(true);
   const [lang, setLang] = useState<'cn' | 'tw' | 'hk'>('cn'); 
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
 
   // Splash Screen State
   const [showSplash, setShowSplash] = useState(true);
@@ -289,6 +292,11 @@ export default function App() {
   const [isMaskMode, setIsMaskMode] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [selectedCharacter, setSelectedCharacter] = useState<'zundamon' | 'metan'>('zundamon');
+  
+  // Data Management States
+  const [importMode, setImportMode] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [copySuccess, setCopySuccess] = useState(false);
   
   const [useVoicevox, setUseVoicevox] = useState(() => {
       try {
@@ -357,6 +365,37 @@ export default function App() {
     setIsMaskMode(prev => !prev);
   };
 
+  // Logic for Import/Export
+  const handleExport = () => {
+      const data = JSON.stringify(favorites);
+      navigator.clipboard.writeText(data).then(() => {
+          setCopySuccess(true);
+          triggerHaptic();
+          setTimeout(() => setCopySuccess(false), 2000);
+      }).catch(() => {
+          // Fallback if clipboard fails
+          alert("Clipboard failed. Please copy manually.");
+      });
+  };
+
+  const handleImport = () => {
+      try {
+          if (!importText.trim()) return;
+          const parsed = JSON.parse(importText);
+          if (Array.isArray(parsed)) {
+              setFavorites(parsed);
+              triggerHaptic();
+              setImportMode(false);
+              setImportText("");
+              alert(lang === 'cn' ? "恢复成功！" : "恢復成功！");
+          } else {
+              throw new Error("Invalid format");
+          }
+      } catch (e) {
+          alert(lang === 'cn' ? "格式错误，请检查代码。" : "格式錯誤，請檢查代碼。");
+      }
+  };
+
   const getLocalizedText = useCallback((item: VocabItem, field: 'meaning' | 'desc' | 'example') => {
       if (lang === 'cn') return item[field];
       if (lang === 'hk') {
@@ -400,7 +439,22 @@ export default function App() {
       example: { cn: "场景例句", tw: "場景例句", hk: "場景例句" },
       zundamon: { cn: "尊达萌", tw: "尊達萌", hk: "尊達萌" },
       metan: { cn: "四国梅坦", tw: "四國梅坦", hk: "四國梅坦" },
-      allScenes: { cn: "全部", tw: "全部", hk: "全部" }
+      allScenes: { cn: "全部", tw: "全部", hk: "全部" },
+      supportTitle: { cn: "支持与推荐", tw: "支持與推薦", hk: "支持與推薦" },
+      supportDesc: { cn: "完全免费无广告。如果喜欢这个App，请考虑支持开发！您的支持是我更新的动力。", tw: "完全免費無廣告。如果喜歡這個App，請考慮支持開發！您的支持是我更新的動力。", hk: "完全免費無廣告。如果鍾意呢個App，請考慮支持開發！你嘅支持係我更新嘅動力。" },
+      donate: { cn: "请我喝咖啡", tw: "請我喝咖啡", hk: "請我飲咖啡" },
+      donateAfdian: { cn: "爱发电 (国内推荐)", tw: "愛發電 (國內推薦)", hk: "愛發電 (國內推薦)" },
+      
+      // Updated for Data Management
+      toolTitle: { cn: "网络优化", tw: "網絡優化", hk: "網絡優化" },
+      pingDesc: { cn: "ExitLag - 降低丢包与跳Ping", tw: "ExitLag - 降低丟包與延遲", hk: "ExitLag - 降低丟包與延遲" },
+      dataTitle: { cn: "数据备份与恢复", tw: "資料備份與恢復", hk: "數據備份與恢復" },
+      dataDesc: { cn: "将收藏列表复制到剪贴板，或导入之前的备份。", tw: "將收藏列表複製到剪貼簿，或導入之前的備份。", hk: "將收藏列表複製到剪貼簿，或導入之前的備份。" },
+      exportBtn: { cn: "复制数据代码", tw: "複製資料代碼", hk: "複製資料代碼" },
+      importBtn: { cn: "导入数据", tw: "導入資料", hk: "導入資料" },
+      copied: { cn: "已复制！", tw: "已複製！", hk: "已複製！" },
+      importPlaceholder: { cn: "在此粘贴数据代码...", tw: "在此貼上資料代碼...", hk: "喺度貼上資料代碼..." },
+      saveBtn: { cn: "保存恢复", tw: "保存恢復", hk: "保存恢復" },
   };
 
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -1072,6 +1126,14 @@ export default function App() {
                         </div>
                     )}
                 </div>
+
+                {/* Support / Monetization Button */}
+                <button 
+                  onClick={() => setShowSupportModal(true)}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-xl border bg-black/40 text-rose-400 border-rose-500/20 hover:bg-rose-500/10 active:scale-95 shadow-lg transition-all duration-300"
+                >
+                    <Heart className="w-4 h-4 fill-rose-500/20" />
+                </button>
                 
                 <button 
                   onClick={toggleMaskMode}
@@ -1290,6 +1352,159 @@ export default function App() {
              </div>
          </div>
       </div>
+
+      {/* --- SUPPORT / DONATION MODAL --- */}
+      {showSupportModal && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+          onClick={() => { setShowSupportModal(false); setImportMode(false); }}
+        >
+          <div 
+            className="w-full max-w-sm bg-[#0f0f12] border border-white/10 rounded-3xl p-6 relative overflow-hidden shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto no-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+             {/* Gradient bg */}
+             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-rose-500/20 to-transparent pointer-events-none"></div>
+
+             <button 
+                onClick={() => { setShowSupportModal(false); setImportMode(false); }}
+                className="absolute top-4 right-4 text-zinc-400 hover:text-white"
+             >
+                <X className="w-5 h-5" />
+             </button>
+
+             <div className="flex flex-col items-center text-center relative z-10">
+                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-600 flex items-center justify-center shadow-lg shadow-rose-900/40 mb-4">
+                     <Heart className="w-8 h-8 text-white fill-white/20" />
+                 </div>
+                 
+                 <h3 className="text-xl font-bold text-white mb-2">{uiText.supportTitle[lang]}</h3>
+                 <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
+                     {uiText.supportDesc[lang]}
+                 </p>
+
+                 {/* Donation Links - Platform Only to Avoid P2P Risk */}
+                 <div className="w-full space-y-3 mb-6">
+                     {/* Ko-fi */}
+                     <a 
+                        href="https://ko-fi.com/clonelysaki"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full h-12 bg-white text-black font-bold rounded-xl flex items-center justify-between px-4 hover:bg-zinc-200 transition-colors shadow-lg shadow-white/5 group"
+                     >
+                        <div className="flex items-center gap-3">
+                            <Coffee className="w-5 h-5" />
+                            <span className="text-sm">Ko-fi</span>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-black" />
+                     </a>
+
+                     {/* Afdian (China) */}
+                     <a 
+                        href="https://afdian.com/a/saki39"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full h-12 bg-[#946ce6] text-white font-bold rounded-xl flex items-center justify-between px-4 hover:bg-[#a685e8] transition-colors shadow-lg shadow-purple-500/20 group"
+                     >
+                        <div className="flex items-center gap-3">
+                            <Zap className="w-5 h-5 fill-current" />
+                            <span className="text-sm">{uiText.donateAfdian[lang]}</span>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-purple-200 group-hover:text-white" />
+                     </a>
+                 </div>
+
+                 <div className="w-full h-px bg-white/10 mb-6"></div>
+
+                 {/* 2. Tool Section (ExitLag) */}
+                 <h4 className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-3 flex items-center gap-2 w-full">
+                     <Activity className="w-3 h-3" />
+                     {uiText.toolTitle[lang]}
+                 </h4>
+
+                 {/* ExitLag - Enhanced with Glow */}
+                 <a 
+                    href="https://www.exitlag.com/refer/10240772"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full p-3 bg-gradient-to-r from-rose-600/10 to-orange-600/10 border border-rose-500/30 rounded-xl flex items-center justify-between group hover:border-rose-500/50 hover:from-rose-600/20 hover:to-orange-600/20 transition-all mb-6 relative overflow-hidden"
+                 >
+                    {/* Glow Effect */}
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-rose-500/20 blur-xl rounded-full -mr-10 -mt-10 pointer-events-none"></div>
+                    
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-900/20">
+                             <Globe className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="text-left">
+                            <div className="flex items-center gap-2">
+                                <div className="text-sm font-bold text-zinc-100">ExitLag</div>
+                                <span className="px-1.5 py-0.5 rounded bg-rose-500 text-[9px] font-bold text-white uppercase tracking-wider">Recommended</span>
+                            </div>
+                            <div className="text-[10px] text-zinc-400">{uiText.pingDesc[lang]}</div>
+                        </div>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-rose-400 group-hover:text-rose-300 relative z-10" />
+                 </a>
+
+                 <div className="w-full h-px bg-white/10 mb-6"></div>
+
+                 {/* 3. Data Management (New Feature) */}
+                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2 w-full">
+                     <FileJson className="w-3 h-3" />
+                     {uiText.dataTitle[lang]}
+                 </h4>
+                 
+                 <p className="text-[10px] text-zinc-500 text-left w-full mb-3 leading-relaxed">
+                     {uiText.dataDesc[lang]}
+                 </p>
+
+                 {!importMode ? (
+                     <div className="flex gap-2 w-full">
+                         <button 
+                            onClick={handleExport}
+                            className="flex-1 h-10 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-zinc-300 transition-colors"
+                         >
+                            {copySuccess ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                            {copySuccess ? uiText.copied[lang] : uiText.exportBtn[lang]}
+                         </button>
+                         <button 
+                            onClick={() => setImportMode(true)}
+                            className="flex-1 h-10 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-zinc-300 transition-colors"
+                         >
+                            <Upload className="w-4 h-4" />
+                            {uiText.importBtn[lang]}
+                         </button>
+                     </div>
+                 ) : (
+                     <div className="w-full animate-fade-in">
+                         <textarea 
+                            value={importText}
+                            onChange={(e) => setImportText(e.target.value)}
+                            placeholder={uiText.importPlaceholder[lang]}
+                            className="w-full h-24 bg-black/50 border border-white/20 rounded-xl p-3 text-xs text-zinc-300 focus:outline-none focus:border-rose-500/50 mb-2 resize-none"
+                         />
+                         <div className="flex gap-2">
+                             <button 
+                                onClick={() => setImportMode(false)}
+                                className="flex-1 h-9 rounded-lg border border-white/10 text-zinc-400 text-xs font-bold hover:bg-white/5"
+                             >
+                                Cancel
+                             </button>
+                             <button 
+                                onClick={handleImport}
+                                className="flex-1 h-9 rounded-lg bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-900/20 hover:bg-rose-600"
+                             >
+                                {uiText.saveBtn[lang]}
+                             </button>
+                         </div>
+                     </div>
+                 )}
+
+             </div>
+          </div>
+        </div>
+      )}
 
       {/* --- DETAIL VIEW OVERLAY --- */}
       {selectedItem && (
