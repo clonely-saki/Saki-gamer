@@ -51,8 +51,8 @@ const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
   
   if (cat === 'VALORANT') {
     return (
-      <div className={`w-10 h-10 flex items-center justify-center shadow-lg relative overflow-hidden ${isA ? 'bg-[#0f1923] border border-[#00f0ff]' : 'bg-[#0f1923] border border-[#ff4655]'}`}>
-        {isA ? <Sword className="w-5 h-5 text-[#00f0ff]" /> : <Crosshair className="w-5 h-5 text-[#ff4655]" />}
+      <div className={`w-8 h-8 flex items-center justify-center shadow-lg relative overflow-hidden ${isA ? 'bg-[#0f1923] border border-[#00f0ff]' : 'bg-[#0f1923] border border-[#ff4655]'}`}>
+        {isA ? <Sword className="w-4 h-4 text-[#00f0ff]" /> : <Crosshair className="w-4 h-4 text-[#ff4655]" />}
         <div className="absolute inset-0 bg-white/5 skew-x-12"></div>
       </div>
     );
@@ -60,9 +60,9 @@ const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
 
   if (cat === 'APEX') {
     return (
-      <div className="w-10 h-10 relative flex items-center justify-center">
+      <div className="w-8 h-8 relative flex items-center justify-center">
         <div className={`absolute inset-0 w-full h-full [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)] ${isA ? 'bg-gradient-to-b from-orange-600 to-red-700' : 'bg-gradient-to-b from-neutral-600 to-neutral-800'}`}></div>
-        <div className="relative z-10 text-white font-bold text-xs tracking-tighter">
+        <div className="relative z-10 text-white font-bold text-[10px] tracking-tighter">
             {isA ? "ATK" : "DEF"}
         </div>
         <div className="absolute inset-0 border border-white/30 [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)] pointer-events-none"></div>
@@ -72,21 +72,21 @@ const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
 
   if (cat === 'OW') {
     return (
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(249,158,26,0.2)] border ${isA ? 'bg-[#f99e1a] border-white' : 'bg-[#282c34] border-[#f99e1a]'}`}>
-        {isA ? <Shield className="w-5 h-5 text-[#1a1c24]" /> : <Zap className="w-5 h-5 text-[#f99e1a]" />}
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-[0_0_10px_rgba(249,158,26,0.2)] border ${isA ? 'bg-[#f99e1a] border-white' : 'bg-[#282c34] border-[#f99e1a]'}`}>
+        {isA ? <Shield className="w-4 h-4 text-[#1a1c24]" /> : <Zap className="w-4 h-4 text-[#f99e1a]" />}
       </div>
     );
   }
 
   return (
-    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md border border-white/20 ${isA ? 'bg-gradient-to-br from-cyan-400 to-blue-500' : 'bg-gradient-to-br from-fuchsia-500 to-pink-500'}`}>
-      {isA ? <User className="w-5 h-5 text-zinc-100" /> : <Bot className="w-5 h-5 text-zinc-100" />}
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md border border-white/20 ${isA ? 'bg-gradient-to-br from-cyan-400 to-blue-500' : 'bg-gradient-to-br from-fuchsia-500 to-pink-500'}`}>
+      {isA ? <User className="w-4 h-4 text-zinc-100" /> : <Bot className="w-4 h-4 text-zinc-100" />}
     </div>
   );
 };
 
 // --- Unified Glass Icon Component ---
-const GlassListIcon = React.memo(({ cat }: { cat: string }) => {
+const GlassListIcon = React.memo(({ cat, size = "md" }: { cat: string, size?: "sm" | "md" | "lg" }) => {
     let icon = <Layers className="w-5 h-5 text-zinc-100" />;
     // Optimized gradients: Simple CSS gradients, no blurs
     let bgGradient = "from-slate-800 to-slate-900";
@@ -94,36 +94,40 @@ const GlassListIcon = React.memo(({ cat }: { cat: string }) => {
     let borderColor = "border-white/10";
     let ringColor = "ring-white/5";
 
+    const isSmall = size === "sm";
+    const dim = isSmall ? "w-8 h-8" : "w-12 h-12";
+    const iconSize = isSmall ? "w-4 h-4" : "w-5 h-5";
+
     switch(cat) {
         case 'LIFE':
-            icon = <MessageCircle className="w-5 h-5 text-fuchsia-200" />;
+            icon = <MessageCircle className={`${iconSize} text-fuchsia-200`} />;
             bgGradient = "from-fuchsia-900/40 to-purple-900/40";
             borderColor = "border-fuchsia-500/20";
             break;
         case 'VALORANT':
-            icon = <ValorantLogo className="w-5 h-5 text-rose-200" />;
+            icon = <ValorantLogo className={`${iconSize} text-rose-200`} />;
             bgGradient = "from-rose-900/40 to-red-900/40";
             borderColor = "border-rose-500/20";
             break;
         case 'APEX':
-            icon = <ApexLogo className="w-5 h-5 text-red-200" />;
+            icon = <ApexLogo className={`${iconSize} text-red-200`} />;
             bgGradient = "from-red-900/40 to-orange-900/40";
             borderColor = "border-red-500/20";
             break;
         case 'OW':
-            icon = <OWLogo className="w-5 h-5 text-orange-200" />;
+            icon = <OWLogo className={`${iconSize} text-orange-200`} />;
             bgGradient = "from-orange-900/40 to-amber-900/40";
             borderColor = "border-orange-500/20";
             break;
         default: // ALL
-            icon = <Layers className="w-5 h-5 text-blue-200" />;
+            icon = <Layers className={`${iconSize} text-blue-200`} />;
             bgGradient = "from-blue-900/40 to-indigo-900/40";
             borderColor = "border-blue-500/20";
             break;
     }
 
     return (
-        <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${bgGradient} border ${borderColor} ${glowColor} group-hover:scale-105 transition-transform duration-300 ring-1 ring-inset ${ringColor}`}>
+        <div className={`relative ${dim} rounded-xl flex items-center justify-center bg-gradient-to-br ${bgGradient} border ${borderColor} ${glowColor} transition-transform duration-300 ring-1 ring-inset ${ringColor}`}>
             {icon}
         </div>
     );
@@ -979,15 +983,15 @@ export default function App() {
               : 'bg-[#18181b] border border-white/10 rounded-xl rounded-bl-sm';
 
           return (
-              <div key={i} className={`flex ${isB ? 'justify-end' : 'justify-start'} mb-6 items-end gap-3`}>
+              <div key={i} className={`flex ${isB ? 'justify-end' : 'justify-start'} mb-2 items-end gap-2`}>
                   {!isB && ( <Avatar cat={category} side="A" /> )}
                   <div className={`max-w-[75%] flex flex-col ${isB ? 'items-end' : 'items-start'}`}>
-                      <div className={`px-4 py-3 shadow-lg relative text-zinc-100 ${bubbleStyle}`}>
-                          <div className={`text-base font-bold leading-relaxed transition-all duration-300 ${category === 'APEX' ? 'skew-x-[10deg]' : ''} ${category === 'VALORANT' ? 'uppercase tracking-wide' : ''} ${category === 'OW' && isB ? 'text-[#131519]' : ''}`}>
+                      <div className={`px-3 py-2 shadow-lg relative text-zinc-100 ${bubbleStyle}`}>
+                          <div className={`text-sm font-bold leading-snug transition-all duration-300 ${category === 'APEX' ? 'skew-x-[10deg]' : ''} ${category === 'VALORANT' ? 'uppercase tracking-wide' : ''} ${category === 'OW' && isB ? 'text-[#131519]' : ''}`}>
                              {text}
                           </div>
                           {translation && (
-                              <div className={`text-[10px] mt-1 pt-1 border-t ${category === 'APEX' ? 'skew-x-[10deg]' : ''} ${
+                              <div className={`text-[9px] mt-1 pt-1 border-t ${category === 'APEX' ? 'skew-x-[10deg]' : ''} ${
                                   isB ? (category === 'OW' ? 'border-[#131519]/20 text-[#131519]/80' : 'border-white/20 text-white/90') 
                                       : 'border-white/10 text-zinc-400'
                               }`}>
@@ -1301,7 +1305,7 @@ export default function App() {
 
           {/* Modal Content */}
           <div 
-            className={`w-full max-w-md h-[85vh] sm:h-auto sm:max-h-[80vh] ${detailTheme.detailBgClass} border border-white/10 sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col relative overflow-hidden`}
+            className={`w-full max-w-md h-[95vh] sm:h-auto sm:max-h-[85vh] ${detailTheme.detailBgClass} border border-white/10 sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col relative overflow-hidden`}
           >
               {/* Top Banner Background */}
               <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
@@ -1310,41 +1314,54 @@ export default function App() {
               <div className="absolute top-4 right-4 z-20">
                   <button 
                       onClick={handleVisualClose}
-                      className="w-10 h-10 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 hover:bg-white/10 active:scale-95 transition-all text-zinc-200 shadow-lg"
+                      className="w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 hover:bg-white/10 active:scale-95 transition-all text-zinc-200 shadow-lg"
                   >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4" />
                   </button>
               </div>
 
-              {/* Content Scroll Area */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar p-6 pt-12 relative z-10">
+              {/* Content Scroll Area - Flex 1 allows it to take remaining space, overflow-auto handles small screens */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar p-6 pt-10 relative z-10 flex flex-col">
                   
                   {/* Header Section */}
-                  <div className="text-center mb-8 relative">
-                      {/* Category Icon */}
-                      <div className="flex justify-center mb-4">
-                           <div className="scale-125">
-                                <GlassListIcon cat={selectedItem.cat} />
+                  <div className="text-center mb-4 relative">
+                      {/* Small Icon Top Left */}
+                      <div className="absolute top-0 left-0">
+                           <div className="scale-75 origin-top-left">
+                                <GlassListIcon cat={selectedItem.cat} size="sm" />
                            </div>
                       </div>
 
-                      <h2 className={`text-4xl font-black mb-2 tracking-tight ${detailTheme.accentColorClass}`}>
+                      <h2 className={`text-3xl font-black mb-1 tracking-tight ${detailTheme.accentColorClass}`}>
                           {getLocalizedText(selectedItem, 'meaning')}
                       </h2>
                       
-                      <div className="flex items-center justify-center gap-3 text-zinc-400 mb-4">
-                          <span className="text-xl font-bold text-white">{selectedItem.term}</span>
+                      {/* Compact Term + Audio Row */}
+                      <div className="flex items-center justify-center gap-3 text-zinc-400 mb-2">
+                          <span className="text-lg font-bold text-white">{selectedItem.term}</span>
                           <span className="w-1 h-1 bg-zinc-600 rounded-full"></span>
-                          <span className="text-lg">{selectedItem.kana}</span>
+                          <span className="text-base">{selectedItem.kana}</span>
+                          
+                          {/* Integrated Audio Button */}
+                          <button
+                            onClick={() => handlePlay(selectedItem.kana || selectedItem.term, selectedItem.id + "_main")}
+                            className={`ml-1 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 ${detailTheme.buttonClass} border border-white/10`}
+                          >
+                            {playingId === selectedItem.id + "_main" ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            ) : (
+                                <Volume2 className="w-4 h-4 text-white fill-current" />
+                            )}
+                          </button>
                       </div>
 
                       {/* Meta Tags Row */}
                       <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
                            {/* Stars */}
                            {selectedItem.stars && selectedItem.stars > 0 && (
-                                <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full flex items-center gap-1">
+                                <div className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full flex items-center gap-1">
                                     {Array.from({ length: selectedItem.stars }).map((_, i) => (
-                                        <Star key={i} className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                                        <Star key={i} className="w-2.5 h-2.5 fill-yellow-500 text-yellow-500" />
                                     ))}
                                 </div>
                            )}
@@ -1354,59 +1371,45 @@ export default function App() {
                                const tagObj = catTags.find(t => t.id === tagId);
                                const tagLabel = tagObj ? (lang === 'cn' ? tagObj.label : (lang === 'hk' ? tagObj.label_hk : tagObj.label_tw)) : tagId;
                                return (
-                                   <span key={tagId} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-zinc-300">
+                                   <span key={tagId} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded-full text-[10px] text-zinc-300">
                                        {tagLabel}
                                    </span>
                                );
                            })}
                            {/* Level Badge */}
-                           <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-zinc-500">
+                           <span className="px-2 py-0.5 bg-white/5 border border-white/10 rounded-full text-[10px] text-zinc-500">
                                Lv.{selectedItem.level}
                            </span>
                       </div>
                   </div>
 
-                  {/* Play Button (Floating Center) */}
-                  <div className="flex justify-center -mt-6 mb-8 relative z-20">
-                        <button
-                            onClick={() => handlePlay(selectedItem.kana || selectedItem.term, selectedItem.id + "_main")}
-                            className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all active:scale-95 ${detailTheme.buttonClass}`}
-                        >
-                            {playingId === selectedItem.id + "_main" ? (
-                                <Loader2 className="w-8 h-8 animate-spin text-white" />
-                            ) : (
-                                <Volume2 className="w-8 h-8 text-white fill-current" />
-                            )}
-                        </button>
-                  </div>
-
-                  {/* Description Box */}
-                  <div className="bg-white/5 border border-white/5 rounded-2xl p-5 mb-6 backdrop-blur-sm">
-                      <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  {/* Description Box - Compact */}
+                  <div className="bg-white/5 border border-white/5 rounded-xl p-3 mb-4 backdrop-blur-sm shrink-0">
+                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-2">
                           <Type className="w-3 h-3" />
                           {uiText.description[lang]}
                       </h4>
-                      <p className="text-base leading-relaxed text-zinc-200">
+                      <p className="text-sm leading-relaxed text-zinc-200">
                           {getLocalizedText(selectedItem, 'desc')}
                       </p>
                   </div>
 
-                  {/* Chat Examples */}
-                  <div className="mb-24">
-                      <div className="flex items-center justify-between mb-4 px-2">
-                          <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                  {/* Chat Examples - Takes remaining space if needed */}
+                  <div className="mb-20 flex-1">
+                      <div className="flex items-center justify-between mb-2 px-1">
+                          <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                               <MessageCircle className="w-3 h-3" />
                               {uiText.example[lang]}
                           </h4>
                           <button 
                              onClick={() => handlePlay(getLocalizedText(selectedItem, 'example'), selectedItem.id + "_ex")}
-                             className={`p-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/5 ${playingId === selectedItem.id + "_ex" ? 'text-green-400 border-green-500/30' : 'text-zinc-400'}`}
+                             className={`p-1.5 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/5 ${playingId === selectedItem.id + "_ex" ? 'text-green-400 border-green-500/30' : 'text-zinc-400'}`}
                           >
-                             {playingId === selectedItem.id + "_ex" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+                             {playingId === selectedItem.id + "_ex" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-current" />}
                           </button>
                       </div>
                       
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                           {renderChatBubbles(getLocalizedText(selectedItem, 'example'))}
                       </div>
                   </div>
@@ -1418,16 +1421,16 @@ export default function App() {
                    <div className="flex items-center justify-between gap-4">
                        <button 
                            onClick={(e) => { triggerHaptic(); toggleFavorite(e, selectedItem.id); }}
-                           className="flex-1 h-12 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-center gap-2 font-bold text-sm active:scale-95 transition-all hover:bg-white/20"
+                           className="flex-1 h-10 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-center gap-2 font-bold text-xs active:scale-95 transition-all hover:bg-white/20"
                        >
-                           <Backpack className={`w-4 h-4 ${favorites.includes(selectedItem.id) ? 'fill-yellow-400 text-yellow-400' : 'text-zinc-400'}`} />
+                           <Backpack className={`w-3.5 h-3.5 ${favorites.includes(selectedItem.id) ? 'fill-yellow-400 text-yellow-400' : 'text-zinc-400'}`} />
                            <span className={favorites.includes(selectedItem.id) ? 'text-yellow-400' : 'text-zinc-300'}>
                                {favorites.includes(selectedItem.id) ? 'Saved' : 'Save'}
                            </span>
                        </button>
 
                        {/* Character Toggle */}
-                       <div className="flex bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-1 h-12 items-center">
+                       <div className="flex bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-1 h-10 items-center">
                            <button 
                                onClick={() => { setSelectedCharacter('zundamon'); triggerHaptic(); }}
                                className={`px-3 h-full rounded-lg text-[10px] font-bold transition-all ${selectedCharacter === 'zundamon' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}
