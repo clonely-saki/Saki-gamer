@@ -1,3 +1,3 @@
 {
-  "regions": ["sin1"] // sin1是Vercel的新加坡节点，国内访问延迟最低
+  "regions": ["sin1"]
 }
