@@ -88,67 +88,54 @@ const Avatar = ({ cat, side }: { cat: string, side: 'A' | 'B' }) => {
 // --- Unified Glass Icon Component ---
 const GlassListIcon = React.memo(({ cat }: { cat: string }) => {
     let icon = <Layers className="w-5 h-5 text-zinc-100" />;
-    // Enhanced gradients for a "gem-like" look
-    let bgGradient = "from-slate-500/20 to-blue-600/20";
-    let glowColor = "shadow-blue-500/10";
+    // Optimized gradients: Simple CSS gradients, no blurs
+    let bgGradient = "from-slate-800 to-slate-900";
+    let glowColor = "shadow-none"; // Removed shadows for flat feel or keep minimal
     let borderColor = "border-white/10";
-    let ringColor = "ring-blue-400/20";
+    let ringColor = "ring-white/5";
 
     switch(cat) {
         case 'LIFE':
             icon = <Sparkles className="w-5 h-5 text-fuchsia-200" />;
-            bgGradient = "from-fuchsia-500/20 to-purple-600/20";
-            glowColor = "shadow-fuchsia-500/20";
-            borderColor = "border-fuchsia-400/20";
-            ringColor = "ring-fuchsia-400/20";
+            bgGradient = "from-fuchsia-900/40 to-purple-900/40";
+            borderColor = "border-fuchsia-500/20";
             break;
         case 'VALORANT':
             icon = <Zap className="w-5 h-5 text-rose-200" />;
-            bgGradient = "from-rose-500/20 to-red-600/20";
-            glowColor = "shadow-rose-500/20";
-            borderColor = "border-rose-400/20";
-            ringColor = "ring-rose-400/20";
+            bgGradient = "from-rose-900/40 to-red-900/40";
+            borderColor = "border-rose-500/20";
             break;
         case 'APEX':
             icon = <Target className="w-5 h-5 text-red-200" />;
-            bgGradient = "from-red-600/20 to-orange-700/20";
-            glowColor = "shadow-red-500/20";
-            borderColor = "border-red-400/20";
-            ringColor = "ring-red-400/20";
+            bgGradient = "from-red-900/40 to-orange-900/40";
+            borderColor = "border-red-500/20";
             break;
         case 'OW':
             icon = <Gamepad2 className="w-5 h-5 text-orange-200" />;
-            bgGradient = "from-orange-500/20 to-amber-600/20";
-            glowColor = "shadow-orange-500/20";
-            borderColor = "border-orange-400/20";
-            ringColor = "ring-orange-400/20";
+            bgGradient = "from-orange-900/40 to-amber-900/40";
+            borderColor = "border-orange-500/20";
             break;
         default: // ALL
             icon = <Layers className="w-5 h-5 text-blue-200" />;
-            bgGradient = "from-blue-500/20 to-indigo-600/20";
-            glowColor = "shadow-blue-500/20";
-            borderColor = "border-blue-400/20";
-            ringColor = "ring-blue-400/20";
+            bgGradient = "from-blue-900/40 to-indigo-900/40";
+            borderColor = "border-blue-500/20";
             break;
     }
 
-    // REMOVED backdrop-blur-md to prevent iOS crashes on scroll
     return (
-        <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${bgGradient} border ${borderColor} shadow-lg ${glowColor} group-hover:scale-105 transition-transform duration-300 ring-1 ring-inset ${ringColor}`}>
-            {/* Inner gloss reflection */}
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-transparent opacity-50 pointer-events-none"></div>
+        <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${bgGradient} border ${borderColor} ${glowColor} group-hover:scale-105 transition-transform duration-300 ring-1 ring-inset ${ringColor}`}>
             {icon}
         </div>
     );
 });
 
 // --- Theme Configurations ---
-// OPTIMIZATION: Removed backdrop-blur from cardClass to prevent iOS GPU memory overload/crashing
+// OPTIMIZATION: Flat design to reduce rendering overhead. 
+// Removed complex shadows, heavy borders, and background layers for list items.
 const THEME_STYLES: Record<string, { 
     bgClass: string,
     bgOverlay: React.ReactNode,
     cardClass: string,
-    cardBgContent: React.ReactNode,
     accentColorClass: string,
     buttonClass: string,
     detailBgClass: string,
@@ -158,40 +145,28 @@ const THEME_STYLES: Record<string, {
     bgClass: "bg-[#050505]",
     bgOverlay: (
        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-         {/* Cool Blue/Slate Ambient for ALL */}
-         <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-blue-950/40 via-[#0a0a0c] to-[#050505]"></div>
-         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
-         <div className="absolute top-[-200px] right-[-100px] w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px]"></div>
+         <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-blue-950/20 via-[#0a0a0c] to-[#050505]"></div>
+         {/* Simple noise or pattern is okay as it is one layer */}
        </div>
     ),
-    // Removed backdrop-blur-md
-    cardClass: "rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.05)] relative overflow-hidden group hover:border-white/10 hover:shadow-blue-500/5",
-    cardBgContent: (
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-    ),
+    // Flat list item style: Transparent bg, bottom border for separation
+    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-white/5 active:bg-white/5 transition-colors",
     accentColorClass: "text-blue-400", 
     buttonClass: "bg-zinc-100 text-black rounded-xl font-bold hover:bg-zinc-200 transition-all",
-    detailBgClass: "bg-[#050505]/95 backdrop-blur-3xl",
+    detailBgClass: "bg-[#050505]", // Simplified background
     underlineColor: "border-blue-400"
   },
   LIFE: {
     bgClass: "bg-[#050505]", 
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Warm Fuchsia/Purple Ambient for LIFE - Distinct from ALL */}
-        <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-fuchsia-900/30 via-[#0a0a0c] to-[#050505]"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
-        <div className="absolute bottom-0 right-0 w-[500px] h-[300px] bg-fuchsia-600/10 rounded-full blur-[100px]"></div>
+        <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-fuchsia-900/20 via-[#0a0a0c] to-[#050505]"></div>
       </div>
     ),
-    // Removed backdrop-blur-md
-    cardClass: "rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.05)] relative overflow-hidden group hover:border-white/10 hover:shadow-fuchsia-500/5",
-    cardBgContent: (
-      <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-    ),
+    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-white/5 active:bg-white/5 transition-colors",
     accentColorClass: "text-fuchsia-400",
     buttonClass: "bg-gradient-to-r from-fuchsia-600 to-purple-600 rounded-xl font-bold shadow-lg shadow-fuchsia-900/20 hover:shadow-fuchsia-600/40 transition-all",
-    detailBgClass: "bg-[#0a0a0c]/95 backdrop-blur-3xl",
+    detailBgClass: "bg-[#050505]",
     underlineColor: "border-fuchsia-500"
   },
   VALORANT: {
@@ -200,20 +175,13 @@ const THEME_STYLES: Record<string, {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-[#0f1923]"></div>
         <div className="absolute top-0 right-0 w-[60%] h-full bg-[#ff4655]/5 skew-x-[-20deg] transform origin-bottom"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[size:100%_4px] opacity-10 pointer-events-none"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,70,85,0.05)_1px,transparent_1px)] bg-[size:100px_100%] opacity-20"></div>
       </div>
     ),
-    // Removed backdrop-blur-sm
-    cardClass: "rounded-none border border-white/5 bg-[#ece8e1]/5 hover:bg-[#ece8e1]/10 transition-all relative overflow-hidden group/card shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] hover:border-[#ff4655]/30",
-    cardBgContent: (
-      <div className="absolute inset-0 pointer-events-none opacity-20 group-hover/card:opacity-30 transition-opacity">
-         <div className="absolute top-0 right-0 w-20 h-full bg-[#ff4655]/20 skew-x-[-20deg]"></div>
-      </div>
-    ),
+    // Flat style with subtle accent border color
+    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-[#ff4655]/10 active:bg-[#ff4655]/5 transition-colors",
     accentColorClass: "text-[#ff4655]",
     buttonClass: "bg-[#ff4655] rounded-none uppercase tracking-wider font-bold [clip-path:polygon(0_0,100%_0,100%_80%,92%_100%,0_100%)] hover:bg-[#ff5865]",
-    detailBgClass: "bg-[#0f1923]/95 backdrop-blur-3xl",
+    detailBgClass: "bg-[#0f1923]",
     underlineColor: "border-[#ff4655]"
   },
   APEX: {
@@ -221,18 +189,13 @@ const THEME_STYLES: Record<string, {
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-[451px] bg-gradient-to-b from-[#da292a]/10 via-[#1a0b0b]/80 to-[#1a0b0b]"></div>
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(transparent_0%,#000_100%),repeating-linear-gradient(45deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_1px,transparent_1px,transparent_10px)]"></div>
-        <div className="absolute top-0 right-0 w-[200px] h-full border-l border-red-500/10 skew-x-[-15deg]"></div>
       </div>
     ),
-    // Removed backdrop-blur-md
-    cardClass: "skew-x-[-6deg] border border-white/5 bg-gradient-to-br from-neutral-900/40 to-neutral-950/40 hover:from-red-900/20 transition-all relative overflow-hidden shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] hover:border-red-500/30",
-    cardBgContent: (
-      <div className="absolute inset-0 pointer-events-none opacity-30 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#000_10px,#000_11px)]"></div>
-    ),
+    // Removed skew from container to prevent rendering artifacts/crashes, kept red accent
+    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-red-500/10 active:bg-red-500/5 transition-colors",
     accentColorClass: "text-[#ff4e4e]",
     buttonClass: "bg-[#da292a] skew-x-[-10deg] border-b-4 border-[#8e0e0e] font-bold tracking-tighter uppercase hover:bg-[#f03a3b]",
-    detailBgClass: "bg-[#1a0b0b]/90 backdrop-blur-3xl",
+    detailBgClass: "bg-[#1a0b0b]",
     underlineColor: "border-[#da292a]"
   },
   OW: {
@@ -240,18 +203,12 @@ const THEME_STYLES: Record<string, {
     bgOverlay: (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-[#f99e1a]/10 via-[#181a20] to-[#181a20]"></div>
-        <div className="absolute top-[-100px] right-[-100px] w-[500px] h-[500px] bg-[#f99e1a]/5 rounded-full blur-3xl"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px] opacity-20"></div>
       </div>
     ),
-    // Removed backdrop-blur-md
-    cardClass: "rounded-2xl border border-white/5 bg-[#22252e]/60 hover:bg-[#2b2f3a]/80 transition-all shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)] relative overflow-hidden group hover:border-[#f99e1a]/30",
-    cardBgContent: (
-       <div className="absolute inset-0 bg-gradient-to-r from-[#f99e1a]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-    ),
+    cardClass: "group relative py-5 px-2 flex items-center justify-between border-b border-[#f99e1a]/10 active:bg-[#f99e1a]/5 transition-colors",
     accentColorClass: "text-[#f99e1a] font-bold",
     buttonClass: "bg-[#f99e1a] hover:bg-[#ffaa33] text-[#16171d] rounded-xl font-bold shadow-[0_4px_15px_-5px_rgba(249,158,26,0.4)] transition-all transform hover:-translate-y-0.5",
-    detailBgClass: "bg-[#181a20]/90 backdrop-blur-3xl",
+    detailBgClass: "bg-[#181a20]",
     underlineColor: "border-[#f99e1a]"
   }
 };
@@ -261,33 +218,31 @@ const VocabCard = React.memo(({ item, catId, theme, isMaskMode, favorites, toggl
     return (
         <div 
             onClick={() => openDetail(item)}
-            className={`group py-4 px-4 flex items-center justify-between cursor-pointer ${
-            catId === 'ALL' ? THEME_STYLES['ALL'].cardClass : theme.cardClass
-            }`}
+            className={catId === 'ALL' ? THEME_STYLES['ALL'].cardClass : theme.cardClass}
         >
-            {/* Background Animation Layer */}
-            {catId === 'ALL' ? THEME_STYLES['ALL'].cardBgContent : theme.cardBgContent}
-            
-            {/* Left: Glass Icon Decoration */}
-            <div className={`mr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
+            {/* Left: Icon - Visual Anchor */}
+            <div className={`mr-4 relative z-10 shrink-0 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
                 <GlassListIcon cat={item.cat} />
             </div>
 
             {/* Center: Content */}
-            <div className={`flex-1 min-w-0 pr-2 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
-            <h3 className={`font-medium text-[16px] text-zinc-100 leading-relaxed mb-0.5 truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'not-italic' : ''}`}>
-                {displayMeaning}
-            </h3>
-            <p className={`text-[14px] font-normal text-slate-400 truncate font-mono flex items-center gap-2 group-hover:text-zinc-200 transition-colors`}>
-                <span>{item.term}</span>
-                {item.kana !== item.term && <span className="opacity-70 border-l border-neutral-600 pl-2 group-hover:text-neutral-300">{item.kana}</span>}
-            </p>
+            <div className={`flex-1 min-w-0 pr-4 relative z-10 ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}>
+                <div className="flex items-center gap-2 mb-1">
+                    <h3 className={`font-medium text-[17px] text-zinc-100 leading-snug truncate transition-all duration-300 ${isMaskMode ? 'blur-md hover:blur-none select-none' : ''} ${item.cat === 'VALORANT' ? 'uppercase tracking-wider' : ''} ${item.cat === 'OW' ? 'not-italic' : ''}`}>
+                        {displayMeaning}
+                    </h3>
+                </div>
+                <p className={`text-[13px] font-normal text-zinc-500 truncate font-mono flex items-center gap-2 group-hover:text-zinc-400 transition-colors`}>
+                    <span className="text-zinc-400">{item.term}</span>
+                    {item.kana !== item.term && <span className="opacity-50">•</span>}
+                    {item.kana !== item.term && <span>{item.kana}</span>}
+                </p>
             </div>
 
             {/* Right: Favorite Button */}
             <button
                 onClick={(e) => toggleFavorite(e, item.id)}
-                className={`p-2 relative z-10 text-neutral-600 hover:text-yellow-400 transition-colors ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}
+                className={`p-3 -mr-2 relative z-10 text-zinc-700 hover:text-yellow-400 active:scale-95 transition-colors ${item.cat === 'APEX' ? 'skew-x-[6deg]' : ''}`}
             >
                 <Star className={`w-5 h-5 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
             </button>
@@ -603,13 +558,6 @@ export default function App() {
     const currentX = e.touches[0].clientX;
     const diff = currentX - touchStartRef.current;
     
-    // Calculate transform manually
-    // Base position is -activeIndex * 100% (but container width relative)
-    // Actually the container is width = N * 100%. 
-    // If 5 categories, width = 500%.
-    // Active index 0: 0%
-    // Active index 1: -20% (relative to container width)
-    
     const categoryCount = CATEGORIES.length;
     const baseOffsetPct = -(activeIndex * (100 / categoryCount));
     
@@ -640,10 +588,6 @@ export default function App() {
         sliderRef.current.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
         sliderRef.current.style.willChange = 'auto'; // release memory
         
-        // IMPORTANT: We need to clear the inline transform we set via JS
-        // so that React's state-based rendering takes over (or we force it to snap).
-        // If we change tab, the state update will drive the new transform.
-        // If we stay on same tab, clearing it snaps back (because React's style hasn't changed).
         sliderRef.current.style.transform = ''; 
     }
     
@@ -1107,7 +1051,7 @@ export default function App() {
                  </div>
 
                  {/* List - Virtualized */}
-                 <div className="space-y-3">
+                 <div className="space-y-0"> {/* Removed vertical spacing for flat list */}
                    {shouldRenderContent ? (
                         items.length > 0 ? (
                             items.map((item) => (
